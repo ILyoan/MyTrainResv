@@ -4,9 +4,9 @@ import android.util.Log;
 
 public class Test {
 	private static final String TAG = "MyTrainResv";
-	public void test() {
-		Log.d(TAG, "test");
+	
+	public void login(String id, String password) {
 		MyTrainResv myTrainResv = MyTrainResv.getInstance();
-		Station station = Station.getInstance();
+		myTrainResv.login(id, password);
 	}
 }

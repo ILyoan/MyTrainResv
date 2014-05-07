@@ -1,7 +1,16 @@
 package com.ilyoan.mytrainresv.core;
 
+import android.app.Activity;
+import android.util.Log;
+import android.widget.Toast;
+
 public class MyTrainResv {
-	private static MyTrainResv instance = null;
+	private static final String TAG = "MyTrainResv";
+	
+	private static MyTrainResv instance = null;	
+	private static Activity activity = null;
+	
+	private MyHttp http = new MyHttp();
 	
 	private MyTrainResv() { }
 	
@@ -10,5 +19,22 @@ public class MyTrainResv {
 			instance = new MyTrainResv();
 		}
 		return instance;
+	}
+	
+	public static void setActivity(Activity activity) {
+		MyTrainResv.activity = activity;
+	}
+	
+	public void login(String id, String pw) {
+		Log.d(TAG, "MyTrainResv.login(" + id + ")");
+		http.login(id, pw);
+	}
+	
+	public static void showToast(String message) {
+		Toast toast = Toast.makeText(
+				MyTrainResv.activity.getApplicationContext(),
+				message,
+				Toast.LENGTH_LONG);
+		toast.show();
 	}
 }
