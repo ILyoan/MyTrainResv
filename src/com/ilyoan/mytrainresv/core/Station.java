@@ -1,4 +1,4 @@
-package com.ilyoan.autokorailresv.core;
+package com.ilyoan.mytrainresv.core;
 
 import java.util.ArrayList;
 
