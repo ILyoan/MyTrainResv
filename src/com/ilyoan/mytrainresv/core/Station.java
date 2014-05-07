@@ -3,7 +3,7 @@ package com.ilyoan.mytrainresv.core;
 import java.util.ArrayList;
 
 public class Station {
-	private Station instance = null;
+	private static Station instance = null;
 	
 	private ArrayList<StationInfo> stations = new ArrayList<StationInfo>();
 	
@@ -365,7 +365,7 @@ public class Station {
 		this.stations.add(new StationInfo("0178", "희방사"));
 	}
 	
-	public Station getInstance() {
+	public static Station getInstance() {
 		if (instance == null) {
 			instance = new Station();
 		}

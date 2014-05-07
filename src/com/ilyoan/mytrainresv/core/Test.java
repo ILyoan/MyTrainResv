@@ -6,5 +6,7 @@ public class Test {
 	private static final String TAG = "MyTrainResv";
 	public void test() {
 		Log.d(TAG, "test");
+		MyTrainResv myTrainResv = MyTrainResv.getInstance();
+		Station station = Station.getInstance();
 	}
 }

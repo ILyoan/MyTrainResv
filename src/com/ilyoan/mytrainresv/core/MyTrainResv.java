@@ -1,11 +1,11 @@
 package com.ilyoan.mytrainresv.core;
 
 public class MyTrainResv {
-	private MyTrainResv instance = null;
+	private static MyTrainResv instance = null;
 	
 	private MyTrainResv() { }
 	
-	public MyTrainResv getInstance() {
+	public static MyTrainResv getInstance() {
 		if (instance == null) {
 			instance = new MyTrainResv();
 		}
