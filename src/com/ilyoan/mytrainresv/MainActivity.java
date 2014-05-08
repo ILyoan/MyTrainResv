@@ -46,7 +46,7 @@ public class MainActivity extends Activity {
         // Set test button click handler.
         findViewById(R.id.button_test).setOnClickListener(onTestClick);
     }
-    
+
     private void initWidgets() {
     	initStationSpinner((Spinner)findViewById(R.id.spinner_station_from));
     	initStationSpinner((Spinner)findViewById(R.id.spinner_station_to));
@@ -57,11 +57,11 @@ public class MainActivity extends Activity {
     	// Set widget value according to the preferences.
     	fromPreference();
     }
-    
+
     private void initStationSpinner(Spinner spinner) {
     	initSpinner(spinner, Station.getInstance().names());
     }
-    
+
     private void initDateSpinner(Spinner spinner) {
     	Date date = new Date();
     	DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -72,6 +72,7 @@ public class MainActivity extends Activity {
     	}
     	initSpinner(spinner, dates);
     }
+
     
     private void initTimeSpinner(Spinner spinner) {
     	ArrayList<String> times = new ArrayList<String>();
@@ -81,14 +82,14 @@ public class MainActivity extends Activity {
     	}
     	initSpinner(spinner, times);
     }
-    
+
     private void initSpinner(Spinner spinner, ArrayList<String> data) {
     	ArrayAdapter<String> adapter = new ArrayAdapter<String>(
       			 this, android.R.layout.simple_spinner_item, data);
    	   	adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
    	   	spinner.setAdapter(adapter);
     }
-    
+
     private void fromPreference() {
     	// preferences
         SharedPreferences pref = getSharedPreferences(PREF, Activity.MODE_PRIVATE);
@@ -101,7 +102,7 @@ public class MainActivity extends Activity {
         int prefTimeTo = pref.getInt(PREF_TIME_TO, 0);
         boolean prefFirstClass = pref.getBoolean(PREF_FIRST_CLASS, false);
         boolean prefKtxOnly = pref.getBoolean(PREF_KTX_ONLY, true);
-        
+
         // user id
         EditText editTextId = (EditText)findViewById(R.id.editText_id);
         editTextId.setText(prefId);        
@@ -130,7 +131,7 @@ public class MainActivity extends Activity {
         CheckBox ktxOnly = (CheckBox)findViewById(R.id.checkBox_ktx_only);
         ktxOnly.setChecked(prefKtxOnly);
     }
-    
+
     private void toPreference() {
     	// preferences
         SharedPreferences pref = getSharedPreferences(PREF, Activity.MODE_PRIVATE);
@@ -165,27 +166,60 @@ public class MainActivity extends Activity {
         // commit
         editor.commit();
     }
-    
+
     private String getId() {
-    	EditText editTextId = (EditText)findViewById(R.id.editText_id);
-    	return editTextId.getText().toString();
+    	return ((EditText)findViewById(R.id.editText_id)).getText().toString();
     }
-    
+
     private String getPassword() {
-    	EditText editTextPw = (EditText)findViewById(R.id.editText_pw);
-    	return editTextPw.getText().toString();
+    	return ((EditText)findViewById(R.id.editText_pw)).getText().toString();
     }
-    
+
+    private String getStationFrom() {
+    	return (String)((Spinner)findViewById(R.id.spinner_station_from)).getSelectedItem();
+    }
+
+    private String getStationTo() {
+    	return (String)((Spinner)findViewById(R.id.spinner_station_to)).getSelectedItem();
+    }
+
+    private String getDate() {
+    	return ((String)((Spinner)findViewById(R.id.spinner_date)).getSelectedItem())
+    				.replaceAll("-", "");
+    }
+
+    private String getTimeFrom() {
+    	return ((String)((Spinner)findViewById(R.id.spinner_time_from)).getSelectedItem())
+    			.replaceAll(":", "") + "00";
+    }
+
+    private String getTimeTo() {
+    	return ((String)((Spinner)findViewById(R.id.spinner_time_to)).getSelectedItem())
+    			.replaceAll(":", "") + "00";
+    }
+
+    private boolean getFirstClass() {    	
+    	return ((CheckBox)findViewById(R.id.checkBox_first_class)).isChecked();    	
+    }
+
+    private boolean getKtxOnly() {
+    	return ((CheckBox)findViewById(R.id.checkBox_ktx_only)).isChecked();
+    }
+
     Button.OnClickListener onTestClick = new View.OnClickListener() {
 		@Override
 		public void onClick(View v) {
 			toPreference();
 			
-			String id = getId();
-			String password = getPassword();
-			
 			Test test = new Test();
-			test.login(id, password);
+			test.login(getId(), getPassword());	
+			test.searchTrain(getStationFrom(),
+							 getStationTo(),
+							 getDate(),
+							 getTimeFrom(),
+							 getTimeTo(),
+							 getFirstClass(),
+							 getKtxOnly());
 		}
     };
 }

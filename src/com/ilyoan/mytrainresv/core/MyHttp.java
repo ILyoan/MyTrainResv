@@ -26,6 +26,7 @@ import android.util.Log;
 public class MyHttp {
 	private static final String TAG = "MyTrainResv";
 	private static String URL_LOGIN = "https://www.korail.com/servlets/hc.hc14100.sw_hc14111_i2Svt";
+	private static String URL_SEARCH = "http://www.korail.com/servlets/pr.pr21100.sw_pr21111_i1Svt";
 
 	public void login(String id, String pw) {
 		Log.d(TAG, "MyHttp.login(" + id + ")");
@@ -56,6 +57,83 @@ public class MyHttp {
 		}
 	};
 	
+	public void searchTrain(String stationFrom,
+							String stationTo,
+							String date,
+							String timeFrom,
+							boolean ktxOnly) {
+		Log.d(TAG, "MyHttp.searchTrain() START");
+		Log.v(TAG, "       stationFrom: " + stationFrom);
+		Log.v(TAG, "         stationTo: " + stationTo);
+		Log.v(TAG, "              date: " + date);
+		Log.v(TAG, "          timeFrom: " + timeFrom);
+		Log.v(TAG, "           ktxOnly: " + ktxOnly);
+		
+		ArrayList<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
+		nameValuePairs.add(new BasicNameValuePair("txtGoStartCode", stationFrom));
+		nameValuePairs.add(new BasicNameValuePair("txtGoEndCode", stationTo));		
+		nameValuePairs.add(new BasicNameValuePair("txtGoAbrdDt", date));
+		nameValuePairs.add(new BasicNameValuePair("txtGoHour", timeFrom));
+		nameValuePairs.add(new BasicNameValuePair("selGoTrain", ktxOnly ? "00" : "05"));
+		nameValuePairs.add(new BasicNameValuePair("txtPsgCnt1", "1"));
+		nameValuePairs.add(new BasicNameValuePair("chkStnNm", "N"));
+		nameValuePairs.add(new BasicNameValuePair("radJobId", "1"));
+		
+		HttpEntity param;
+		try {
+			param = new UrlEncodedFormEntity(nameValuePairs);
+			String url = URL_SEARCH + "?" + getContentString(param);
+			Log.d(TAG, "MyHttp.searchTrain - url: " + url);
+			
+			HttpTask httpTask = new HttpTask(Method.GET, URL_SEARCH, onSearchTrainResponse);
+			httpTask.execute();
+		} catch (UnsupportedEncodingException e) {
+			Log.e(TAG, "HttpTask.searchTrain - exception: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+	
+	private OnResponse onSearchTrainResponse = new OnResponse() {
+		@Override
+		public void onResponse(int status, String content) {
+			Log.d(TAG, "MyHttp.onSearchTrainResponse - status: " + status);
+			Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);			
+		}
+	};
+		
+	private static int getStatusCode(HttpResponse response) {
+		return response.getStatusLine().getStatusCode();
+	}
+	
+	private static String getContentString(HttpEntity entity) {
+		BufferedReader br = null;
+		StringBuilder sb = new StringBuilder();
+		try {
+			InputStream content = entity.getContent();
+			br = new BufferedReader(new InputStreamReader(content));			
+			String line;
+			while ((line = br.readLine()) != null) {
+				//Log.v(TAG, line);
+				sb.append(line);
+			}
+		} catch (IllegalStateException e) {
+			Log.e(TAG, "MyHttp.getContentString - exception: " + e.getMessage());
+			e.printStackTrace();
+		} catch (IOException e) {
+			Log.e(TAG, "MyHttp.getContentString - exception: " + e.getMessage());
+			e.printStackTrace();
+		} finally {
+			if (br != null) {
+				try {
+					br.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return sb.toString();
+	}
+		
 	private interface OnResponse {
 		public void onResponse(int status, String content);
 	}
@@ -104,7 +182,7 @@ public class MyHttp {
 			try {
 				response = httpClient.execute(request);
 				this.status = getStatusCode(response);
-				this.contents = getContentString(response);
+				this.contents = getContentString(response.getEntity());
 			} catch (ClientProtocolException e) {
 				Log.e(TAG, "HttpTask failed: " + e.getMessage());
 				e.printStackTrace();
@@ -118,40 +196,6 @@ public class MyHttp {
 		@Override
 		protected void onPostExecute(HttpResponse response) {
 			this.onResponse.onResponse(this.status, this.contents);
-		}
-		
-		private int getStatusCode(HttpResponse response) {
-			return response.getStatusLine().getStatusCode();
-		}
-		
-		private String getContentString(HttpResponse response) {
-			BufferedReader br = null;
-			StringBuilder sb = new StringBuilder();
-			HttpEntity entity = response.getEntity();
-			try {
-				InputStream content = entity.getContent();
-				br = new BufferedReader(new InputStreamReader(content));			
-				String line;
-				while ((line = br.readLine()) != null) {
-					//Log.v(TAG, line);
-					sb.append(line);
-				}
-			} catch (IllegalStateException e) {
-				Log.e(TAG, "MyHttp.getContentString - exception: " + e.getMessage());
-				e.printStackTrace();
-			} catch (IOException e) {
-				Log.e(TAG, "MyHttp.getContentString - exception: " + e.getMessage());
-				e.printStackTrace();
-			} finally {
-				if (br != null) {
-					try {
-						br.close();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-			return sb.toString();
 		}
 	}
 }

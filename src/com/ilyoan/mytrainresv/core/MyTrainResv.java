@@ -30,6 +30,22 @@ public class MyTrainResv {
 		http.login(id, pw);
 	}
 	
+	public void searchTrain(String stationFrom,
+							String stationTo,
+							String date,
+							String timeFrom,
+							String timeTo,
+							boolean firstClass,
+							boolean ktxOnly) {
+		Log.d(TAG, "MyTrainResv.searchTrain()");
+		Station station = Station.getInstance();
+		http.searchTrain(station.getCode(stationFrom),
+						 station.getCode(stationTo),
+						 date,
+						 timeFrom,
+						 ktxOnly);
+	}
+	
 	public static void showToast(String message) {
 		Toast toast = Toast.makeText(
 				MyTrainResv.activity.getApplicationContext(),
