@@ -30,61 +30,61 @@ public class MyHttp {
 
 	public void login(String id, String pw) {
 		Log.d(TAG, "MyHttp.login(" + id + ")");
-		
+
 		ArrayList<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
 		nameValuePairs.add(new BasicNameValuePair("selInputFlg", "2"));
 		nameValuePairs.add(new BasicNameValuePair("UserId", id));
 		nameValuePairs.add(new BasicNameValuePair("UserPwd", pw));
 		nameValuePairs.add(new BasicNameValuePair("hidMemberFlg", "1"));
-		
+
 		HttpTask httpTask = new HttpTask(Method.POST, URL_LOGIN, onLoginResponse);
 		httpTask.setPostEntity(nameValuePairs);
 		httpTask.execute();
 	}
-	
-	private OnResponse onLoginResponse = new OnResponse() {
+
+	private final OnResponse onLoginResponse = new OnResponse() {
 		@Override
 		public void onResponse(int status, String content) {
 			Log.d(TAG, "MyHttp.onLoginResponse - status: " + status);
 			//Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);
-			if (content.contains("w_mem01106")) {				
+			if (content.contains("w_mem01106")) {
 				Log.i(TAG, "MyHttp.onLoginResponse - login succeeded");
-				MyTrainResv.showToast("로그인 성공");				
+				MyTrainResv.showToast("로그인 성공");
 			} else {
 				Log.i(TAG, "MyHttp.onLoginResponse - login failed");
-				MyTrainResv.showToast("로그인 실패");				
+				MyTrainResv.showToast("로그인 실패");
 			}
 		}
 	};
-	
+
 	public void searchTrain(String stationFrom,
-							String stationTo,
-							String date,
-							String timeFrom,
-							boolean ktxOnly) {
+			String stationTo,
+			String date,
+			String timeFrom,
+			boolean ktxOnly) {
 		Log.d(TAG, "MyHttp.searchTrain() START");
 		Log.v(TAG, "       stationFrom: " + stationFrom);
 		Log.v(TAG, "         stationTo: " + stationTo);
 		Log.v(TAG, "              date: " + date);
 		Log.v(TAG, "          timeFrom: " + timeFrom);
 		Log.v(TAG, "           ktxOnly: " + ktxOnly);
-		
+
 		ArrayList<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
 		nameValuePairs.add(new BasicNameValuePair("txtGoStartCode", stationFrom));
-		nameValuePairs.add(new BasicNameValuePair("txtGoEndCode", stationTo));		
+		nameValuePairs.add(new BasicNameValuePair("txtGoEndCode", stationTo));
 		nameValuePairs.add(new BasicNameValuePair("txtGoAbrdDt", date));
 		nameValuePairs.add(new BasicNameValuePair("txtGoHour", timeFrom));
 		nameValuePairs.add(new BasicNameValuePair("selGoTrain", ktxOnly ? "00" : "05"));
 		nameValuePairs.add(new BasicNameValuePair("txtPsgCnt1", "1"));
 		nameValuePairs.add(new BasicNameValuePair("chkStnNm", "N"));
 		nameValuePairs.add(new BasicNameValuePair("radJobId", "1"));
-		
+
 		HttpEntity param;
 		try {
 			param = new UrlEncodedFormEntity(nameValuePairs);
 			String url = URL_SEARCH + "?" + getContentString(param);
 			Log.d(TAG, "MyHttp.searchTrain - url: " + url);
-			
+
 			HttpTask httpTask = new HttpTask(Method.GET, URL_SEARCH, onSearchTrainResponse);
 			httpTask.execute();
 		} catch (UnsupportedEncodingException e) {
@@ -92,25 +92,25 @@ public class MyHttp {
 			e.printStackTrace();
 		}
 	}
-	
-	private OnResponse onSearchTrainResponse = new OnResponse() {
+
+	private final OnResponse onSearchTrainResponse = new OnResponse() {
 		@Override
 		public void onResponse(int status, String content) {
 			Log.d(TAG, "MyHttp.onSearchTrainResponse - status: " + status);
-			Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);			
+			Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);
 		}
 	};
-		
+
 	private static int getStatusCode(HttpResponse response) {
 		return response.getStatusLine().getStatusCode();
 	}
-	
+
 	private static String getContentString(HttpEntity entity) {
 		BufferedReader br = null;
 		StringBuilder sb = new StringBuilder();
 		try {
 			InputStream content = entity.getContent();
-			br = new BufferedReader(new InputStreamReader(content));			
+			br = new BufferedReader(new InputStreamReader(content));
 			String line;
 			while ((line = br.readLine()) != null) {
 				//Log.v(TAG, line);
@@ -133,19 +133,19 @@ public class MyHttp {
 		}
 		return sb.toString();
 	}
-		
+
 	private interface OnResponse {
 		public void onResponse(int status, String content);
 	}
-	
+
 	public enum Method { GET, POST }
-	
+
 	private class HttpTask extends AsyncTask<String, Void, HttpResponse> {
-		private Method method;
-		private String url;
+		private final Method method;
+		private final String url;
 		private OnResponse onResponse = null;
 		private HttpEntity postEntity = null;
-		private int status;		
+		private int status;
 		private String contents;
 
 		public HttpTask(Method method, String url, OnResponse onResponse) {
@@ -153,7 +153,7 @@ public class MyHttp {
 			this.url = url;
 			this.onResponse = onResponse;
 		}
-		
+
 		public void setPostEntity(List<NameValuePair> entities) {
 			try {
 				this.postEntity = new UrlEncodedFormEntity(entities);
@@ -162,23 +162,23 @@ public class MyHttp {
 				e.printStackTrace();
 			}
 		}
-		
+
 		@Override
 		protected HttpResponse doInBackground(String... params) {
 			HttpClient httpClient = new DefaultHttpClient();
 			HttpUriRequest request = null;
-			HttpResponse response = null;	
-			
+			HttpResponse response = null;
+
 			if (this.method == Method.GET) {
 				request = new HttpGet(this.url);
 			} else {
 				HttpPost post = new HttpPost(this.url);
 				if (this.postEntity != null) {
-					post.setEntity(this.postEntity);	
-				}				
+					post.setEntity(this.postEntity);
+				}
 				request = post;
-			} 
-			
+			}
+
 			try {
 				response = httpClient.execute(request);
 				this.status = getStatusCode(response);
@@ -192,7 +192,7 @@ public class MyHttp {
 			}
 			return response;
 		}
-		
+
 		@Override
 		protected void onPostExecute(HttpResponse response) {
 			this.onResponse.onResponse(this.status, this.contents);

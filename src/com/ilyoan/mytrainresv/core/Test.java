@@ -5,14 +5,14 @@ public class Test {
 		MyTrainResv myTrainResv = MyTrainResv.getInstance();
 		myTrainResv.login(id, password);
 	}
-	
+
 	public void searchTrain(String stationFrom,
-							String stationTo,
-							String date,
-							String timeFrom,
-							String timeTo,
-							boolean firstClass,
-							boolean ktxOnly) {
+			String stationTo,
+			String date,
+			String timeFrom,
+			String timeTo,
+			boolean firstClass,
+			boolean ktxOnly) {
 		MyTrainResv myTrainResv = MyTrainResv.getInstance();
 		myTrainResv.searchTrain(stationFrom, stationTo, date, timeFrom, timeTo, firstClass, ktxOnly);
 	}

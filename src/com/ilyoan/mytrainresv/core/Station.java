@@ -4,9 +4,9 @@ import java.util.ArrayList;
 
 public class Station {
 	private static Station instance = null;
-	
-	private ArrayList<StationInfo> stations = new ArrayList<StationInfo>();
-	
+
+	private final ArrayList<StationInfo> stations = new ArrayList<StationInfo>();
+
 	private Station() {
 		this.stations.add(new StationInfo("0001", "서울"));
 		this.stations.add(new StationInfo("0104", "용산"));
@@ -26,9 +26,9 @@ public class Station {
 		this.stations.add(new StationInfo("0036", "광주송정"));
 		this.stations.add(new StationInfo("0041", "목포"));
 		this.stations.add(new StationInfo("0053", "여수EXPO"));
-		
-		this.stations.add(new StationInfo("0000", "--- KTX ---"));		
-		
+
+		this.stations.add(new StationInfo("0000", "--- KTX ---"));
+
 		this.stations.add(new StationInfo("0342", "가수원"));
 		this.stations.add(new StationInfo("0476", "가야"));
 		this.stations.add(new StationInfo("0150", "가평"));
@@ -364,14 +364,14 @@ public class Station {
 		this.stations.add(new StationInfo("0343", "흑석리"));
 		this.stations.add(new StationInfo("0178", "희방사"));
 	}
-	
+
 	public static Station getInstance() {
 		if (instance == null) {
 			instance = new Station();
 		}
 		return instance;
 	}
-	
+
 	public String getCode(String name) {
 		for (int i = 0; i < this.stations.size(); ++i) {
 			if (this.stations.get(i).name().equals(name)) {
@@ -380,7 +380,7 @@ public class Station {
 		}
 		return "0000";
 	}
-	
+
 	public ArrayList<String> names() {
 		ArrayList<String> res = new ArrayList<String>();
 		for (int i = 0; i < this.stations.size(); ++i) {
@@ -388,7 +388,7 @@ public class Station {
 		}
 		return res;
 	}
-	
+
 	public ArrayList<String> codes() {
 		ArrayList<String> res = new ArrayList<String>();
 		for (int i = 0; i < this.stations.size(); ++i) {
@@ -396,20 +396,20 @@ public class Station {
 		}
 		return res;
 	}
-	
+
 	public class StationInfo {
 		public String code;
 		public String name;
-		
+
 		public StationInfo(String code, String name) {
 			this.code = code;
 			this.name = name;
 		}
-		
+
 		public String code() {
 			return this.code;
 		}
-		
+
 		public String name() {
 			return this.name;
 		}
