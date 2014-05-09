@@ -1,5 +1,7 @@
 package com.ilyoan.mytrainresv.core;
 
+import java.util.ArrayList;
+
 import android.app.Activity;
 import android.util.Log;
 import android.widget.Toast;
@@ -11,6 +13,7 @@ public class MyTrainResv {
 	private static Activity activity = null;
 
 	private final MyHttp http = new MyHttp();
+	private ArrayList<Train> trains = new ArrayList<Train>();
 
 	private MyTrainResv() { }
 
@@ -27,7 +30,7 @@ public class MyTrainResv {
 
 	public void login(String id, String pw) {
 		Log.d(TAG, "MyTrainResv.login(" + id + ")");
-		http.login(id, pw);
+		this.http.login(id, pw);
 	}
 
 	public void searchTrain(String stationFrom,
@@ -39,11 +42,19 @@ public class MyTrainResv {
 			boolean ktxOnly) {
 		Log.d(TAG, "MyTrainResv.searchTrain()");
 		Station station = Station.getInstance();
-		http.searchTrain(station.getCode(stationFrom),
+		this.http.searchTrain(station.getCode(stationFrom),
 				station.getCode(stationTo),
 				date,
 				timeFrom,
 				ktxOnly);
+	}
+
+	public void initTrainList() {
+		this.trains = new ArrayList<Train>();
+	}
+
+	public void addTrain(Train train) {
+		this.trains.add(train);
 	}
 
 	public static void showToast(String message) {

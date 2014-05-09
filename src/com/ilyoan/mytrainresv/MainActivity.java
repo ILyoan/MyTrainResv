@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
@@ -43,7 +44,7 @@ public class MainActivity extends Activity {
 		MyTrainResv.setActivity(this);
 
 		// Set test button click handler.
-		findViewById(R.id.button_test).setOnClickListener(onTestClick);
+		findViewById(R.id.button_test).setOnClickListener(this.onTestClick);
 	}
 
 	private void initWidgets() {
@@ -91,7 +92,7 @@ public class MainActivity extends Activity {
 
 	private void fromPreference() {
 		// preferences
-		SharedPreferences pref = getSharedPreferences(PREF, Activity.MODE_PRIVATE);
+		SharedPreferences pref = getSharedPreferences(PREF, Context.MODE_PRIVATE);
 		String prefId = pref.getString(PREF_ID, "");
 		String prefPw = pref.getString(PREF_PW, "");
 		int prefStationFrom = pref.getInt(PREF_STATION_FROM, 0);
@@ -133,7 +134,7 @@ public class MainActivity extends Activity {
 
 	private void toPreference() {
 		// preferences
-		SharedPreferences pref = getSharedPreferences(PREF, Activity.MODE_PRIVATE);
+		SharedPreferences pref = getSharedPreferences(PREF, Context.MODE_PRIVATE);
 		SharedPreferences.Editor editor = pref.edit();
 
 		// user id
@@ -211,7 +212,7 @@ public class MainActivity extends Activity {
 			toPreference();
 
 			Test test = new Test();
-			test.login(getId(), getPassword());
+			//test.login(getId(), getPassword());
 			test.searchTrain(getStationFrom(),
 					getStationTo(),
 					getDate(),

@@ -22,11 +22,19 @@ import org.apache.http.message.BasicNameValuePair;
 
 import android.os.AsyncTask;
 import android.util.Log;
+import android.util.Pair;
 
 public class MyHttp {
 	private static final String TAG = "MyTrainResv";
 	private static String URL_LOGIN = "https://www.korail.com/servlets/hc.hc14100.sw_hc14111_i2Svt";
 	private static String URL_SEARCH = "http://www.korail.com/servlets/pr.pr21100.sw_pr21111_i1Svt";
+	private static String FP_SEARCH_ERROR_BEGIN = "<span class=\"point02\">";
+	private static String FP_SEARCH_ERROR_END = "</span>";
+	private static String FP_SEARCH_TRAIN_INFO_BEGIN = "new train_info(";
+	private static String FP_SEARCH_TRAIN_INFO_END = ")";
+	private static String FP_SEARCH_SEAT_SOLD_OUT = "btn_selloff.gif";
+	private static String FP_SEARCH_SEAT_SPECIAL = "icon_apm_spe_yes.gif";
+	private static String FP_SEARCH_SEAT_NORMAL = "icon_apm_yes.gif";
 
 	public void login(String id, String pw) {
 		Log.d(TAG, "MyHttp.login(" + id + ")");
@@ -37,7 +45,7 @@ public class MyHttp {
 		nameValuePairs.add(new BasicNameValuePair("UserPwd", pw));
 		nameValuePairs.add(new BasicNameValuePair("hidMemberFlg", "1"));
 
-		HttpTask httpTask = new HttpTask(Method.POST, URL_LOGIN, onLoginResponse);
+		HttpTask httpTask = new HttpTask(Method.POST, URL_LOGIN, this.onLoginResponse);
 		httpTask.setPostEntity(nameValuePairs);
 		httpTask.execute();
 	}
@@ -82,10 +90,10 @@ public class MyHttp {
 		HttpEntity param;
 		try {
 			param = new UrlEncodedFormEntity(nameValuePairs);
-			String url = URL_SEARCH + "?" + getContentString(param);
+			String url = URL_SEARCH + "?" + getContentString(param, "UTF-8");
 			Log.d(TAG, "MyHttp.searchTrain - url: " + url);
 
-			HttpTask httpTask = new HttpTask(Method.GET, URL_SEARCH, onSearchTrainResponse);
+			HttpTask httpTask = new HttpTask(Method.GET, url, this.onSearchTrainResponse);
 			httpTask.execute();
 		} catch (UnsupportedEncodingException e) {
 			Log.e(TAG, "HttpTask.searchTrain - exception: " + e.getMessage());
@@ -97,20 +105,107 @@ public class MyHttp {
 		@Override
 		public void onResponse(int status, String content) {
 			Log.d(TAG, "MyHttp.onSearchTrainResponse - status: " + status);
-			Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);
+			//Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);
+
+			MyTrainResv myTrainResv = MyTrainResv.getInstance();
+
+			// error case
+			ArrayList<Pair<String, Integer>> error = getStringBetweenFingerprint(
+					content,
+					FP_SEARCH_ERROR_BEGIN,
+					FP_SEARCH_ERROR_END);
+			if (error.size() > 0) {
+				Log.w(TAG, "MyHttp.onSearchTrainResponse - error: " + error.get(0));
+				MyTrainResv.showToast(error.get(0).first);
+				return;
+			}
+
+			// train information
+			ArrayList<Pair<String, Integer>> trainInfoList = getStringBetweenFingerprint(
+					content,
+					FP_SEARCH_TRAIN_INFO_BEGIN,
+					FP_SEARCH_TRAIN_INFO_END);
+			for (int i = 0; i < trainInfoList.size(); ++i) {
+				// This string is about train information.
+				String trainInfoStr = trainInfoList.get(i).first;
+				// The train information is start at `index`.
+				int index = trainInfoList.get(i).second;
+				// Find matched icon for special seat.
+				Pair<String, Integer> specialSeat = getFirstMatched(
+						content, FP_SEARCH_SEAT_SOLD_OUT, FP_SEARCH_SEAT_SPECIAL, index);
+				// Find matched icon for normal seat.
+				Pair<String ,Integer> normalSeat =  getFirstMatched(
+						content, FP_SEARCH_SEAT_SOLD_OUT, FP_SEARCH_SEAT_NORMAL, specialSeat.second + 1);
+				// Create new train object.
+				String[] trainInfo = trainInfoStr.replaceAll("\"", "").split(",");
+				Train train = new Train(
+						trainInfo[20].trim(),
+						trainInfo[22].trim(),
+						trainInfo[18].trim(),
+						trainInfo[24].trim(),
+						trainInfo[25].trim(),
+						trainInfo[19].trim(),
+						trainInfo[26].trim(),
+						trainInfo[27].trim(),
+						specialSeat.first == FP_SEARCH_SEAT_SPECIAL,
+						normalSeat.first == FP_SEARCH_SEAT_NORMAL
+						);
+				Log.v(TAG, train.toString());
+				myTrainResv.addTrain(train);
+			}
 		}
 	};
 
-	private static int getStatusCode(HttpResponse response) {
+	private final ArrayList<Pair<String, Integer>> getStringBetweenFingerprint(
+			String text, String begin, String end) {
+		ArrayList<Pair<String, Integer>> res = new ArrayList<Pair<String, Integer>>();
+		int beginIndex = 0;
+		while (beginIndex != -1) {
+			beginIndex = text.indexOf(begin, beginIndex);
+			int endIndex = text.indexOf(end, beginIndex);
+			if (beginIndex == -1 || endIndex == -1) break;
+			res.add(new Pair<String, Integer>(
+					text.substring(beginIndex + begin.length(), endIndex).trim(),
+					beginIndex + begin.length()));
+			beginIndex = endIndex;
+		}
+		return res;
+	}
+
+	private final Pair<String, Integer> getFirstMatched(String text, String a, String b, int beginIndex) {
+		int indexA = text.indexOf(a, beginIndex);
+		int indexB = text.indexOf(b, beginIndex);
+		if (indexA == -1 && indexB == -1) {
+			return new Pair<String, Integer>("", -1);
+		}
+		if (indexA == -1) {
+			return new Pair<String, Integer>(b, indexB);
+		} else if (indexB == -1) {
+			return new Pair<String, Integer>(a, indexA);
+		} else if (indexA < indexB) {
+			return new Pair<String, Integer>(a, indexA);
+		} else {
+			return new Pair<String, Integer>(b, indexB);
+		}
+	}
+
+	private final int getStatusCode(HttpResponse response) {
 		return response.getStatusLine().getStatusCode();
 	}
 
-	private static String getContentString(HttpEntity entity) {
+	private final String getContentString(HttpEntity entity) {
+		return getContentString(entity, "EUC_KR");
+	}
+
+	private final String getContentString(HttpEntity entity, String encoding) {
 		BufferedReader br = null;
 		StringBuilder sb = new StringBuilder();
 		try {
 			InputStream content = entity.getContent();
-			br = new BufferedReader(new InputStreamReader(content));
+			if (entity.getContentEncoding() != null) {
+				encoding = entity.getContentEncoding().getValue();
+			}
+			br = new BufferedReader(new InputStreamReader(content, encoding));
 			String line;
 			while ((line = br.readLine()) != null) {
 				//Log.v(TAG, line);
@@ -178,6 +273,8 @@ public class MyHttp {
 				}
 				request = post;
 			}
+			request.addHeader("Content-Type", "text/html");
+			request.addHeader("charset", "UTF-8");
 
 			try {
 				response = httpClient.execute(request);
@@ -199,3 +296,48 @@ public class MyHttp {
 		}
 	}
 }
+
+/* javascript train_info segnature
+function train_info(
+        txtGoAbrdDt,			// 0
+        txtGoStartCode,
+        txtGoEndCode,
+        selGoTrain,
+        selGoRoom,
+        txtGoHour,				// 5
+        txtGoTrnNo,
+        useSeatFlg,
+        useServiceFlg,
+        selGoSeat,
+        selGoSeat1,				// 10
+        selGoSeat2,
+        txtPsgCnt1,
+        txtPsgCnt2,
+        selGoService,
+        h_trn_seq,				// 15
+        h_chg_trn_dv_cd,
+        h_chg_trn_seq,
+        h_dpt_rs_stn_cd,
+        h_arv_rs_stn_cd,
+        h_trn_no,				// 20
+        h_yms_apl_flg,
+        h_trn_clsf_cd,
+        h_run_dt,
+        h_dpt_dt,
+        h_dpt_tm,				// 25
+        h_arv_dt,
+        h_arv_tm,
+        h_dlay_hr,
+        h_rsv_wait_ps_cnt,
+        h_dtour_flg,			// 30
+        h_car_tp_cd,
+        h_trn_cps_cd1,
+        h_trn_cps_cd2,
+        h_trn_cps_cd3,
+        h_trn_cps_cd4,			// 35
+        h_trn_cps_cd5,
+        h_no_ticket_dpt_rs_stn_cd,
+        h_no_ticket_arv_rs_stn_cd,
+        h_nonstop_msg
+   )
+ */

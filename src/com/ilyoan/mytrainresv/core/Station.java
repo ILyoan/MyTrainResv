@@ -381,6 +381,15 @@ public class Station {
 		return "0000";
 	}
 
+	public String getName(String code) {
+		for (int i = 0; i < this.stations.size(); ++i) {
+			if (this.stations.get(i).code().equals(code)) {
+				return this.stations.get(i).name();
+			}
+		}
+		return "";
+	}
+
 	public ArrayList<String> names() {
 		ArrayList<String> res = new ArrayList<String>();
 		for (int i = 0; i < this.stations.size(); ++i) {
