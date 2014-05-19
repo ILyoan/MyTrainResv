@@ -12,6 +12,7 @@ import android.widget.ListView;
 public class ViewListFragment extends ListFragment {
 	public static final String VIEW_LOGIN = "Login";
 	public static final String VIEW_TRAIN = "Train";
+	public static final String VIEW_TRAIN_LIST = "Train List";
 
 	private Callback callback = dummyCallback;
 	private final ArrayList<String> viewList = new ArrayList<String>();
@@ -32,6 +33,7 @@ public class ViewListFragment extends ListFragment {
 
 		this.viewList.add(VIEW_LOGIN);
 		this.viewList.add(VIEW_TRAIN);
+		this.viewList.add(VIEW_TRAIN_LIST);
 
 		setListAdapter(new ArrayAdapter<String>(
 				getActivity(),

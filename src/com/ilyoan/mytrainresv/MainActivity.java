@@ -15,6 +15,7 @@ public class MainActivity extends FragmentActivity implements ViewListFragment.C
 	ViewListFragment viewListFragment = new ViewListFragment();
 	LoginFragment loginFragment = new LoginFragment();
 	TrainFragment trainFragment = new TrainFragment();
+	TrainListFragment trainListFragment = new TrainListFragment();
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -31,6 +32,8 @@ public class MainActivity extends FragmentActivity implements ViewListFragment.C
 		fragmentTransaction.hide(this.loginFragment);
 		fragmentTransaction.add(R.id.main_activity, this.trainFragment);
 		fragmentTransaction.hide(this.trainFragment);
+		fragmentTransaction.add(R.id.main_activity, this.trainListFragment);
+		fragmentTransaction.hide(this.trainListFragment);
 		fragmentTransaction.commit();
 
 		// Initialize MyTrainResv
@@ -56,11 +59,19 @@ public class MainActivity extends FragmentActivity implements ViewListFragment.C
 			fragmentTransaction.hide(this.viewListFragment);
 			fragmentTransaction.show(this.loginFragment);
 			fragmentTransaction.hide(this.trainFragment);
+			fragmentTransaction.hide(this.trainListFragment);
 			fragmentTransaction.commit();
 		} else if (id == ViewListFragment.VIEW_TRAIN) {
 			fragmentTransaction.hide(this.viewListFragment);
 			fragmentTransaction.hide(this.loginFragment);
 			fragmentTransaction.show(this.trainFragment);
+			fragmentTransaction.hide(this.trainListFragment);
+			fragmentTransaction.commit();
+		} else if (id == ViewListFragment.VIEW_TRAIN_LIST) {
+			fragmentTransaction.hide(this.viewListFragment);
+			fragmentTransaction.hide(this.loginFragment);
+			fragmentTransaction.hide(this.trainFragment);
+			fragmentTransaction.show(this.trainListFragment);
 			fragmentTransaction.commit();
 		}
 	}
@@ -74,6 +85,7 @@ public class MainActivity extends FragmentActivity implements ViewListFragment.C
 			fragmentTransaction.show(this.viewListFragment);
 			fragmentTransaction.hide(this.loginFragment);
 			fragmentTransaction.hide(this.trainFragment);
+			fragmentTransaction.hide(this.trainListFragment);
 			fragmentTransaction.commit();
 			return true;
 		}
