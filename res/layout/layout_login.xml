@@ -44,7 +44,15 @@
         android:layout_alignParentRight="true"
         android:layout_alignTop="@+id/textView2"
         android:ems="10"
-        android:inputType="numberPassword" />
+        android:inputType="textPassword" />
+
+    <Button
+        android:id="@+id/button_login_ok"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/editText_pw"
+        android:text="확인" />
     
 </RelativeLayout>
 

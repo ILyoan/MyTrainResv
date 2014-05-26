@@ -15,6 +15,8 @@ public class MyTrainResv {
 	private final MyHttp http = new MyHttp();
 	private ArrayList<Train> trains = new ArrayList<Train>();
 
+	private OnNotification noti = null;
+
 	private MyTrainResv() { }
 
 	public static MyTrainResv getInstance() {
@@ -49,6 +51,13 @@ public class MyTrainResv {
 				ktxOnly);
 	}
 
+	public void resvTrain(ArrayList<Train> trainList) {
+		Log.d(TAG, "MyTrainResv.resvTrain()");
+		for (Train train : trainList) {
+			this.http.resv(train);
+		}
+	}
+
 	public void initTrainList() {
 		this.trains = new ArrayList<Train>();
 	}
@@ -57,11 +66,29 @@ public class MyTrainResv {
 		this.trains.add(train);
 	}
 
+	public final ArrayList<Train> getTrainList() {
+		return this.trains;
+	}
+
 	public static void showToast(String message) {
 		Toast toast = Toast.makeText(
 				MyTrainResv.activity.getApplicationContext(),
 				message,
 				Toast.LENGTH_LONG);
 		toast.show();
+	}
+
+	public interface OnNotification {
+		public void onTrainList(MyTrainResv myTrain);
+	}
+
+	public void setNotification(OnNotification noti) {
+		this.noti = noti;
+	}
+
+	public void onTrainList() {
+		if (this.noti != null) {
+			this.noti.onTrainList(this);
+		}
 	}
 }

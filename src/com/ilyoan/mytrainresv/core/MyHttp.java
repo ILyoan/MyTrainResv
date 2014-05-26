@@ -28,6 +28,7 @@ public class MyHttp {
 	private static final String TAG = "MyTrainResv";
 	private static String URL_LOGIN = "https://www.korail.com/servlets/hc.hc14100.sw_hc14111_i2Svt";
 	private static String URL_SEARCH = "http://www.korail.com/servlets/pr.pr21100.sw_pr21111_i1Svt";
+	private static String URL_RESV = "http://www.korail.com/servlets/pr.pr12100.sw_pr12111_i1Svt";
 	private static String FP_SEARCH_ERROR_BEGIN = "<span class=\"point02\">";
 	private static String FP_SEARCH_ERROR_END = "</span>";
 	private static String FP_SEARCH_TRAIN_INFO_BEGIN = "new train_info(";
@@ -44,17 +45,25 @@ public class MyHttp {
 		nameValuePairs.add(new BasicNameValuePair("UserId", id));
 		nameValuePairs.add(new BasicNameValuePair("UserPwd", pw));
 		nameValuePairs.add(new BasicNameValuePair("hidMemberFlg", "1"));
-
-		HttpTask httpTask = new HttpTask(Method.POST, URL_LOGIN, this.onLoginResponse);
-		httpTask.setPostEntity(nameValuePairs);
-		httpTask.execute();
+		nameValuePairs.add(new BasicNameValuePair("txtDv", pw.length() == 4 ? "1" : "2"));
+		try {
+			String param = getContentString(new UrlEncodedFormEntity(nameValuePairs), "UTF-8");
+			String url = URL_LOGIN + "?" + param;
+			Log.d(TAG, url);
+			HttpTask httpTask = new HttpTask(Method.GET, url, this.onLoginResponse);
+			//httpTask.setPostEntity(nameValuePairs);
+			httpTask.execute();
+		} catch (UnsupportedEncodingException e) {
+			Log.e(TAG, "HttpTask.login - exception: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 
 	private final OnResponse onLoginResponse = new OnResponse() {
 		@Override
 		public void onResponse(int status, String content) {
 			Log.d(TAG, "MyHttp.onLoginResponse - status: " + status);
-			//Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);
+			Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);
 			if (content.contains("w_mem01106")) {
 				Log.i(TAG, "MyHttp.onLoginResponse - login succeeded");
 				MyTrainResv.showToast("로그인 성공");
@@ -108,6 +117,7 @@ public class MyHttp {
 			//Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);
 
 			MyTrainResv myTrainResv = MyTrainResv.getInstance();
+			myTrainResv.initTrainList();
 
 			// error case
 			ArrayList<Pair<String, Integer>> error = getStringBetweenFingerprint(
@@ -153,8 +163,54 @@ public class MyHttp {
 				Log.v(TAG, train.toString());
 				myTrainResv.addTrain(train);
 			}
+			myTrainResv.onTrainList();
 		}
 	};
+
+
+	public void resv(Train train) {
+		Log.d(TAG, "MyHttp.resv(" + train.toString() + ")");
+
+		ArrayList<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
+		nameValuePairs.add(new BasicNameValuePair("txtCompaCnt1", "1"));
+		nameValuePairs.add(new BasicNameValuePair("txtDptRsStnCd1", train.fromStation));
+		nameValuePairs.add(new BasicNameValuePair("txtArvRsStnCd1", train.toStation));
+		nameValuePairs.add(new BasicNameValuePair("txtDptDt1", train.fromDate));
+		nameValuePairs.add(new BasicNameValuePair("txtDptTm1", train.fromTime));
+		nameValuePairs.add(new BasicNameValuePair("txtTrnClsfCd1", train.type));
+		nameValuePairs.add(new BasicNameValuePair("txtSeatAttCd4", "15"));
+		nameValuePairs.add(new BasicNameValuePair("txtPsgTpCd1", "1"));
+		nameValuePairs.add(new BasicNameValuePair("txtJobId", "1101"));
+		nameValuePairs.add(new BasicNameValuePair("txtJrnyCnt", "1"));
+		nameValuePairs.add(new BasicNameValuePair("txtPsrmClCd1", train.hasNormal ? "1" : "2"));
+		nameValuePairs.add(new BasicNameValuePair("txtJrnySqno1", "001"));
+		nameValuePairs.add(new BasicNameValuePair("txtJrnyTpCd1", "11"));
+		try {
+			String param = getContentString(new UrlEncodedFormEntity(nameValuePairs), "UTF-8");
+			String url = URL_RESV + "?" + param;
+			Log.d(TAG, url);
+			HttpTask httpTask = new HttpTask(Method.GET, url, this.onResvResponse);
+			//httpTask.setPostEntity(nameValuePairs);
+			httpTask.execute();
+		} catch (UnsupportedEncodingException e) {
+			Log.e(TAG, "HttpTask.resv - exception: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+
+	private final OnResponse onResvResponse = new OnResponse() {
+		@Override
+		public void onResponse(int status, String content) {
+			Log.d(TAG, "MyHttp.onResvResponse - status: " + status);
+			Log.v(TAG, "MyHttp.onResvResponse - content: " + content);
+			if (content.contains("w_mem01100")) {
+				Log.i(TAG, "MyHttp.onResvResponse - need login");
+				MyTrainResv.showToast("로그인 필요");
+			}
+		}
+	};
+
+
 
 	private final ArrayList<Pair<String, Integer>> getStringBetweenFingerprint(
 			String text, String begin, String end) {
@@ -274,7 +330,7 @@ public class MyHttp {
 				request = post;
 			}
 			request.addHeader("Content-Type", "text/html");
-			request.addHeader("charset", "UTF-8");
+			request.addHeader("charset", "EUC_KR");
 
 			try {
 				response = httpClient.execute(request);
