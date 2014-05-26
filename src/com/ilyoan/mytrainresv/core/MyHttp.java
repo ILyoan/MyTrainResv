@@ -30,6 +30,7 @@ public class MyHttp {
 	private static String URL_SEARCH = "http://www.korail.com/servlets/pr.pr21100.sw_pr21111_i1Svt";
 	private static String URL_RESV = "http://www.korail.com/servlets/pr.pr12100.sw_pr12111_i1Svt";
 	private static String URL_RESV_REFERER = "http://www.korail.com/servlets/pr.pr21100.sw_pr21111_i1Svt";
+	private static String FP_LOGIN_SUCCESS_IMG = "w_mem01106";
 	private static String FP_SEARCH_ERROR_BEGIN = "<span class=\"point02\">";
 	private static String FP_SEARCH_ERROR_END = "</span>";
 	private static String FP_SEARCH_TRAIN_INFO_BEGIN = "new train_info(";
@@ -37,6 +38,8 @@ public class MyHttp {
 	private static String FP_SEARCH_SEAT_SOLD_OUT = "btn_selloff.gif";
 	private static String FP_SEARCH_SEAT_SPECIAL = "icon_apm_spe_yes.gif";
 	private static String FP_SEARCH_SEAT_NORMAL = "icon_apm_yes.gif";
+	private static String FP_RESV_TO_LOGIN = "w_mem01100";
+	private static String FP_RESV_CONFIRM_IMG = "w_adv03100";
 
 	private final HttpClient httpClient = new DefaultHttpClient();
 
@@ -67,7 +70,7 @@ public class MyHttp {
 		public void onResponse(int status, String content) {
 			Log.d(TAG, "MyHttp.onLoginResponse - status: " + status);
 			Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);
-			if (content.contains("w_mem01106")) {
+			if (content.contains(FP_LOGIN_SUCCESS_IMG)) {
 				Log.i(TAG, "MyHttp.onLoginResponse - login succeeded");
 				MyTrainResv.showToast("로그인 성공");
 			} else {
@@ -206,9 +209,15 @@ public class MyHttp {
 		public void onResponse(int status, String content) {
 			Log.d(TAG, "MyHttp.onResvResponse - status: " + status);
 			//Log.v(TAG, "MyHttp.onResvResponse - content: " + content);
-			if (content.contains("w_mem01100")) {
-				Log.i(TAG, "MyHttp.onResvResponse - need login");
+			if (content.contains(FP_RESV_TO_LOGIN)) {
+				Log.w(TAG, "MyHttp.onResvResponse - need login");
 				MyTrainResv.showToast("로그인 필요");
+			} else if (content.contains(FP_RESV_CONFIRM_IMG)) {
+				Log.i(TAG, "MyHttp.onResvResponse - Success!!!!");
+				MyTrainResv.showToast("예약 완료");
+			} else {
+				Log.w(TAG, "MyHttp.onResvResponse - Fail!!!!");
+				MyTrainResv.showToast("예약 실패");
 			}
 		}
 	};
