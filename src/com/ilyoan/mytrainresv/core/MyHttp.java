@@ -37,6 +37,8 @@ public class MyHttp {
 	private static String FP_SEARCH_SEAT_SPECIAL = "icon_apm_spe_yes.gif";
 	private static String FP_SEARCH_SEAT_NORMAL = "icon_apm_yes.gif";
 
+	private final HttpClient httpClient = new DefaultHttpClient();
+
 	public void login(String id, String pw) {
 		Log.d(TAG, "MyHttp.login(" + id + ")");
 
@@ -50,7 +52,7 @@ public class MyHttp {
 			String param = getContentString(new UrlEncodedFormEntity(nameValuePairs), "UTF-8");
 			String url = URL_LOGIN + "?" + param;
 			Log.d(TAG, url);
-			HttpTask httpTask = new HttpTask(Method.GET, url, this.onLoginResponse);
+			HttpTask httpTask = new HttpTask(this.httpClient, Method.GET, url, this.onLoginResponse);
 			//httpTask.setPostEntity(nameValuePairs);
 			httpTask.execute();
 		} catch (UnsupportedEncodingException e) {
@@ -102,7 +104,7 @@ public class MyHttp {
 			String url = URL_SEARCH + "?" + getContentString(param, "UTF-8");
 			Log.d(TAG, "MyHttp.searchTrain - url: " + url);
 
-			HttpTask httpTask = new HttpTask(Method.GET, url, this.onSearchTrainResponse);
+			HttpTask httpTask = new HttpTask(this.httpClient, Method.GET, url, this.onSearchTrainResponse);
 			httpTask.execute();
 		} catch (UnsupportedEncodingException e) {
 			Log.e(TAG, "HttpTask.searchTrain - exception: " + e.getMessage());
@@ -189,7 +191,7 @@ public class MyHttp {
 			String param = getContentString(new UrlEncodedFormEntity(nameValuePairs), "UTF-8");
 			String url = URL_RESV + "?" + param;
 			Log.d(TAG, url);
-			HttpTask httpTask = new HttpTask(Method.GET, url, this.onResvResponse);
+			HttpTask httpTask = new HttpTask(this.httpClient, Method.GET, url, this.onResvResponse);
 			//httpTask.setPostEntity(nameValuePairs);
 			httpTask.execute();
 		} catch (UnsupportedEncodingException e) {
@@ -202,7 +204,7 @@ public class MyHttp {
 		@Override
 		public void onResponse(int status, String content) {
 			Log.d(TAG, "MyHttp.onResvResponse - status: " + status);
-			Log.v(TAG, "MyHttp.onResvResponse - content: " + content);
+			//Log.v(TAG, "MyHttp.onResvResponse - content: " + content);
 			if (content.contains("w_mem01100")) {
 				Log.i(TAG, "MyHttp.onResvResponse - need login");
 				MyTrainResv.showToast("로그인 필요");
@@ -264,7 +266,7 @@ public class MyHttp {
 			br = new BufferedReader(new InputStreamReader(content, encoding));
 			String line;
 			while ((line = br.readLine()) != null) {
-				//Log.v(TAG, line);
+				Log.v(TAG, line);
 				sb.append(line);
 			}
 		} catch (IllegalStateException e) {
@@ -299,7 +301,10 @@ public class MyHttp {
 		private int status;
 		private String contents;
 
-		public HttpTask(Method method, String url, OnResponse onResponse) {
+		private HttpClient httpClient = null;
+
+		public HttpTask(HttpClient httpClient, Method method, String url, OnResponse onResponse) {
+			this.httpClient = httpClient;
 			this.method = method;
 			this.url = url;
 			this.onResponse = onResponse;
@@ -316,7 +321,6 @@ public class MyHttp {
 
 		@Override
 		protected HttpResponse doInBackground(String... params) {
-			HttpClient httpClient = new DefaultHttpClient();
 			HttpUriRequest request = null;
 			HttpResponse response = null;
 
@@ -333,7 +337,7 @@ public class MyHttp {
 			request.addHeader("charset", "EUC_KR");
 
 			try {
-				response = httpClient.execute(request);
+				response = this.httpClient.execute(request);
 				this.status = getStatusCode(response);
 				this.contents = getContentString(response.getEntity());
 			} catch (ClientProtocolException e) {
