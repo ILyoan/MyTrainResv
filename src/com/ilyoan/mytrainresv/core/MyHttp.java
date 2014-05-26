@@ -29,6 +29,7 @@ public class MyHttp {
 	private static String URL_LOGIN = "https://www.korail.com/servlets/hc.hc14100.sw_hc14111_i2Svt";
 	private static String URL_SEARCH = "http://www.korail.com/servlets/pr.pr21100.sw_pr21111_i1Svt";
 	private static String URL_RESV = "http://www.korail.com/servlets/pr.pr12100.sw_pr12111_i1Svt";
+	private static String URL_RESV_REFERER = "http://www.korail.com/servlets/pr.pr21100.sw_pr21111_i1Svt";
 	private static String FP_SEARCH_ERROR_BEGIN = "<span class=\"point02\">";
 	private static String FP_SEARCH_ERROR_END = "</span>";
 	private static String FP_SEARCH_TRAIN_INFO_BEGIN = "new train_info(";
@@ -335,6 +336,7 @@ public class MyHttp {
 			}
 			request.addHeader("Content-Type", "text/html");
 			request.addHeader("charset", "EUC_KR");
+			request.addHeader("Referer", URL_RESV_REFERER);
 
 			try {
 				response = this.httpClient.execute(request);
