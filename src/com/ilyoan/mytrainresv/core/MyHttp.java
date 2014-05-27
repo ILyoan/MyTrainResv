@@ -26,11 +26,11 @@ import android.util.Pair;
 
 public class MyHttp {
 	private static final String TAG = "MyTrainResv";
-	private static String URL_LOGIN = "https://www.korail.com/servlets/hc.hc14100.sw_hc14111_i2Svt";
-	private static String URL_SEARCH = "http://www.korail.com/servlets/pr.pr21100.sw_pr21111_i1Svt";
-	private static String URL_RESV = "http://www.korail.com/servlets/pr.pr12100.sw_pr12111_i1Svt";
-	private static String URL_RESV_REFERER = "http://www.korail.com/servlets/pr.pr21100.sw_pr21111_i1Svt";
-	private static String FP_LOGIN_SUCCESS_IMG = "w_mem01106";
+	private static String URL_LOGIN = "https://www.letskorail.com/korail/com/loginAction.do";
+	private static String URL_SEARCH = "http://www.letskorail.com/ebizprd/EbizPrdTicketPr21111_i1.do";
+	private static String URL_RESV = "http://www.letskorail.com/ebizprd/EbizPrdTicketPr12111_i1.do";
+	private static String URL_RESV_REFERER = "http://www.letskorail.com/ebizprd/EbizPrdTicketPr21111_i1.do";
+	private static String FP_LOGIN_SUCCESS_URL = "loginProc.do";
 	private static String FP_SEARCH_ERROR_BEGIN = "<span class=\"point02\">";
 	private static String FP_SEARCH_ERROR_END = "</span>";
 	private static String FP_SEARCH_TRAIN_INFO_BEGIN = "new train_info(";
@@ -38,8 +38,10 @@ public class MyHttp {
 	private static String FP_SEARCH_SEAT_SOLD_OUT = "btn_selloff.gif";
 	private static String FP_SEARCH_SEAT_SPECIAL = "icon_apm_spe_yes.gif";
 	private static String FP_SEARCH_SEAT_NORMAL = "icon_apm_yes.gif";
-	private static String FP_RESV_TO_LOGIN = "w_mem01100";
-	private static String FP_RESV_CONFIRM_IMG = "w_adv03100";
+	private static String FP_RESV_TO_LOGIN = "login.do";
+	private static String FP_RESV_CONFIRM_IMG = "tit_tick_emit01.gif";
+	private static String FP_RESV_ERROR_BEGIN = "<span class=\"point02\">";
+	private static String FP_RESV_ERROR_END = "</span>";
 
 	private final HttpClient httpClient = new DefaultHttpClient();
 
@@ -47,6 +49,7 @@ public class MyHttp {
 		Log.d(TAG, "MyHttp.login(" + id + ")");
 
 		ArrayList<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
+		// selInputFlg - 2: membership number, 4: cellphone number, 5: email.
 		nameValuePairs.add(new BasicNameValuePair("selInputFlg", "2"));
 		nameValuePairs.add(new BasicNameValuePair("UserId", id));
 		nameValuePairs.add(new BasicNameValuePair("UserPwd", pw));
@@ -70,7 +73,7 @@ public class MyHttp {
 		public void onResponse(int status, String content) {
 			Log.d(TAG, "MyHttp.onLoginResponse - status: " + status);
 			Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);
-			if (content.contains(FP_LOGIN_SUCCESS_IMG)) {
+			if (content.contains(FP_LOGIN_SUCCESS_URL)) {
 				Log.i(TAG, "MyHttp.onLoginResponse - login succeeded");
 				MyTrainResv.showToast("로그인 성공");
 			} else {
@@ -178,19 +181,25 @@ public class MyHttp {
 		Log.d(TAG, "MyHttp.resv(" + train.toString() + ")");
 
 		ArrayList<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
+		// From this point, parameters are used for reservation.
+		nameValuePairs.add(new BasicNameValuePair("txtSeatAttCd1", "00")); // ??
+		nameValuePairs.add(new BasicNameValuePair("txtSeatAttCd4", "15")); // ?
+		nameValuePairs.add(new BasicNameValuePair("txtTotPsgCnt", "1"));
 		nameValuePairs.add(new BasicNameValuePair("txtCompaCnt1", "1"));
-		nameValuePairs.add(new BasicNameValuePair("txtDptRsStnCd1", train.fromStation));
-		nameValuePairs.add(new BasicNameValuePair("txtArvRsStnCd1", train.toStation));
-		nameValuePairs.add(new BasicNameValuePair("txtDptDt1", train.fromDate));
-		nameValuePairs.add(new BasicNameValuePair("txtDptTm1", train.fromTime));
-		nameValuePairs.add(new BasicNameValuePair("txtTrnClsfCd1", train.type));
-		nameValuePairs.add(new BasicNameValuePair("txtSeatAttCd4", "15"));
-		nameValuePairs.add(new BasicNameValuePair("txtPsgTpCd1", "1"));
 		nameValuePairs.add(new BasicNameValuePair("txtJobId", "1101"));
 		nameValuePairs.add(new BasicNameValuePair("txtJrnyCnt", "1"));
 		nameValuePairs.add(new BasicNameValuePair("txtPsrmClCd1", train.hasNormal ? "1" : "2"));
 		nameValuePairs.add(new BasicNameValuePair("txtJrnySqno1", "001"));
 		nameValuePairs.add(new BasicNameValuePair("txtJrnyTpCd1", "11"));
+		nameValuePairs.add(new BasicNameValuePair("txtDptDt1", train.fromDate));
+		nameValuePairs.add(new BasicNameValuePair("txtDptRsStnCd1", train.fromStation));
+		nameValuePairs.add(new BasicNameValuePair("txtDptTm1", train.fromTime));
+		nameValuePairs.add(new BasicNameValuePair("txtArvRsStnCd1", train.toStation));
+		nameValuePairs.add(new BasicNameValuePair("txtArvTm1", train.toTime));
+		nameValuePairs.add(new BasicNameValuePair("txtTrnNo1", train.no));
+		nameValuePairs.add(new BasicNameValuePair("txtTrnClsfCd1", train.type));
+		nameValuePairs.add(new BasicNameValuePair("txtPsgTpCd1", "1"));
+
 		try {
 			String param = getContentString(new UrlEncodedFormEntity(nameValuePairs), "UTF-8");
 			String url = URL_RESV + "?" + param;
@@ -216,8 +225,16 @@ public class MyHttp {
 				Log.i(TAG, "MyHttp.onResvResponse - Success!!!!");
 				MyTrainResv.showToast("예약 완료");
 			} else {
-				Log.w(TAG, "MyHttp.onResvResponse - Fail!!!!");
-				MyTrainResv.showToast("예약 실패");
+				// error case
+				ArrayList<Pair<String, Integer>> error = getStringBetweenFingerprint(
+						content,
+						FP_RESV_ERROR_BEGIN,
+						FP_RESV_ERROR_END);
+				if (error.size() > 0) {
+					Log.w(TAG, "MyHttp.onSearchTrainResponse - error: " + error.get(0));
+					MyTrainResv.showToast(error.get(0).first);
+					return;
+				}
 			}
 		}
 	};
@@ -262,7 +279,7 @@ public class MyHttp {
 	}
 
 	private final String getContentString(HttpEntity entity) {
-		return getContentString(entity, "EUC_KR");
+		return getContentString(entity, "UTF-8");
 	}
 
 	private final String getContentString(HttpEntity entity, String encoding) {
@@ -343,8 +360,8 @@ public class MyHttp {
 				}
 				request = post;
 			}
-			request.addHeader("Content-Type", "text/html");
-			request.addHeader("charset", "EUC_KR");
+			request.addHeader("Content-Type", "application/xhtml+xml");
+			request.addHeader("charset", "UTF-8");
 			request.addHeader("Referer", URL_RESV_REFERER);
 
 			try {
