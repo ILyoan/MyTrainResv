@@ -44,7 +44,8 @@ public class MyTrainResv {
 			boolean ktxOnly) {
 		Log.d(TAG, "MyTrainResv.searchTrain()");
 		Station station = Station.getInstance();
-		this.http.searchTrain(station.getCode(stationFrom),
+		this.http.searchTrain(
+				station.getCode(stationFrom),
 				station.getCode(stationTo),
 				date,
 				timeFrom,

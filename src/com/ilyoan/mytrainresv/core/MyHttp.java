@@ -58,7 +58,7 @@ public class MyHttp {
 		try {
 			String param = getContentString(new UrlEncodedFormEntity(nameValuePairs), "UTF-8");
 			String url = URL_LOGIN + "?" + param;
-			Log.d(TAG, url);
+			//Log.d(TAG, url);
 			HttpTask httpTask = new HttpTask(this.httpClient, Method.GET, url, this.onLoginResponse);
 			//httpTask.setPostEntity(nameValuePairs);
 			httpTask.execute();
@@ -72,7 +72,7 @@ public class MyHttp {
 		@Override
 		public void onResponse(int status, String content) {
 			Log.d(TAG, "MyHttp.onLoginResponse - status: " + status);
-			Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);
+			//Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);
 			if (content.contains(FP_LOGIN_SUCCESS_URL)) {
 				Log.i(TAG, "MyHttp.onLoginResponse - login succeeded");
 				MyTrainResv.showToast("로그인 성공");
@@ -109,7 +109,7 @@ public class MyHttp {
 		try {
 			param = new UrlEncodedFormEntity(nameValuePairs);
 			String url = URL_SEARCH + "?" + getContentString(param, "UTF-8");
-			Log.d(TAG, "MyHttp.searchTrain - url: " + url);
+			//Log.d(TAG, "MyHttp.searchTrain - url: " + url);
 
 			HttpTask httpTask = new HttpTask(this.httpClient, Method.GET, url, this.onSearchTrainResponse);
 			httpTask.execute();
@@ -203,7 +203,7 @@ public class MyHttp {
 		try {
 			String param = getContentString(new UrlEncodedFormEntity(nameValuePairs), "UTF-8");
 			String url = URL_RESV + "?" + param;
-			Log.d(TAG, url);
+			//Log.d(TAG, url);
 			HttpTask httpTask = new HttpTask(this.httpClient, Method.GET, url, this.onResvResponse);
 			//httpTask.setPostEntity(nameValuePairs);
 			httpTask.execute();
@@ -293,7 +293,7 @@ public class MyHttp {
 			br = new BufferedReader(new InputStreamReader(content, encoding));
 			String line;
 			while ((line = br.readLine()) != null) {
-				Log.v(TAG, line);
+				//Log.v(TAG, line);
 				sb.append(line);
 			}
 		} catch (IllegalStateException e) {
