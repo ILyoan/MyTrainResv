@@ -26,19 +26,32 @@ public class Train {
 		this.hasNormal = hasNormal;
 	}
 
+	public String TrainType() {
+		if (this.type.equals("00")) return "KTX";
+		if (this.type.equals("01")) return "새마을";
+		if (this.type.equals("02")) return "무궁화";
+		if (this.type.equals("03")) return "통근";
+		if (this.type.equals("04")) return "누리로";
+		if (this.type.equals("05")) return "전체";
+		if (this.type.equals("06")) return "공항";
+		if (this.type.equals("07")) return "산천";
+		if (this.type.equals("09")) return "ITX";
+		return this.type;
+	}
 	@Override
 	public String toString() {
 		Station station = Station.getInstance();
-		return String.format("Train No:%s Type:%s [%s](%s %s) -> [%s](%s %s) S:%s, N:%s",
+		return String.format("No:%s %s %s-%s-%s\n%s(%s:%s) -> %s(%s:%s)",
 				this.no,
-				this.type,
+				TrainType(),
+				this.fromDate.substring(0, 4),
+				this.fromDate.substring(4, 6),
+				this.fromDate.substring(6, 8),
 				station.getName(this.fromStation),
-				this.fromDate,
-				this.fromTime,
+				this.fromTime.substring(0, 2),
+				this.fromTime.substring(2, 4),
 				station.getName(this.toStation),
-				this.toDate,
-				this.toTime,
-				(this.hasSpecial ? "Y" : "N"),
-				(this.hasNormal ? "Y" : "N"));
+				this.toTime.substring(0, 2),
+				this.toTime.substring(2, 4));
 	}
 }
