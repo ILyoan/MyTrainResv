@@ -45,6 +45,16 @@ public class MyHttp {
 
 	private final HttpClient httpClient = new DefaultHttpClient();
 
+	private OnSearchTrainCallback onSearchTrainCallback = null;
+
+	public interface OnSearchTrainCallback {
+		public void onResult(ArrayList<Train> trainList, String error);
+	}
+
+	public void setOnSearchTrainCallback(OnSearchTrainCallback cb) {
+		this.onSearchTrainCallback = cb;
+	}
+
 	public void login(String id, String pw) {
 		Log.d(TAG, "MyHttp.login(" + id + ")");
 
@@ -125,8 +135,7 @@ public class MyHttp {
 			Log.d(TAG, "MyHttp.onSearchTrainResponse - status: " + status);
 			//Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);
 
-			MyTrainResv myTrainResv = MyTrainResv.getInstance();
-			myTrainResv.initTrainList();
+			ArrayList<Train> result = new ArrayList<Train>();
 
 			// error case
 			ArrayList<Pair<String, Integer>> error = getStringBetweenFingerprint(
@@ -135,7 +144,9 @@ public class MyHttp {
 					FP_SEARCH_ERROR_END);
 			if (error.size() > 0) {
 				Log.w(TAG, "MyHttp.onSearchTrainResponse - error: " + error.get(0));
-				MyTrainResv.showToast(error.get(0).first);
+				if (MyHttp.this.onSearchTrainCallback != null) {
+					MyHttp.this.onSearchTrainCallback.onResult(null, error.get(0).first);
+				}
 				return;
 			}
 
@@ -170,9 +181,11 @@ public class MyHttp {
 						normalSeat.first == FP_SEARCH_SEAT_NORMAL
 						);
 				Log.v(TAG, train.toString());
-				myTrainResv.addTrain(train);
+				result.add(train);
 			}
-			myTrainResv.onTrainList();
+			if (MyHttp.this.onSearchTrainCallback != null) {
+				MyHttp.this.onSearchTrainCallback.onResult(result, null);
+			}
 		}
 	};
 
@@ -314,7 +327,7 @@ public class MyHttp {
 		return sb.toString();
 	}
 
-	private interface OnResponse {
+	public interface OnResponse {
 		public void onResponse(int status, String content);
 	}
 

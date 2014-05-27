@@ -83,8 +83,7 @@ public class MainActivity extends FragmentActivity implements ViewListFragment.C
 
 	MyTrainResv.OnNotification myTrainNoti = new MyTrainResv.OnNotification() {
 		@Override
-		public void onTrainList(MyTrainResv myTrain) {
-			ArrayList<Train> trainList = myTrain.getTrainList();
+		public void onTrainList(ArrayList<Train> trainList) {
 			MainActivity.this.trainListFragment.setTrainList(trainList);
 			onItemSelected(ViewListFragment.VIEW_TRAIN_LIST);
 		}
