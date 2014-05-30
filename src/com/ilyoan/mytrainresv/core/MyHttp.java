@@ -45,16 +45,14 @@ public class MyHttp {
 
 	private final HttpClient httpClient = new DefaultHttpClient();
 
-	private OnSearchTrainCallback onSearchTrainCallback = null;
-
-	// Interface for search train result handler.
+	// Interface for search train result callback handler.
 	public interface OnSearchTrainCallback {
 		public void onResult(ArrayList<Train> trainList, String error);
 	}
 
-	// Register search train result handler.
-	public void setOnSearchTrainCallback(OnSearchTrainCallback cb) {
-		this.onSearchTrainCallback = cb;
+	// Interface for resv train result callback handler.
+	public interface OnResvTrainCallback {
+		public void onResult(boolean result, String error);
 	}
 
 	// login to system.
@@ -102,7 +100,8 @@ public class MyHttp {
 			String stationTo,
 			String date,
 			String timeFrom,
-			boolean ktxOnly) {
+			boolean ktxOnly,
+			OnSearchTrainCallback callback) {
 		Log.d(TAG, "MyHttp.searchTrain() START");
 		Log.v(TAG, "       stationFrom: " + stationFrom);
 		Log.v(TAG, "         stationTo: " + stationTo);
@@ -126,7 +125,7 @@ public class MyHttp {
 			String url = URL_SEARCH + "?" + getContentString(param, "UTF-8");
 			//Log.d(TAG, "MyHttp.searchTrain - url: " + url);
 
-			HttpTask httpTask = new HttpTask(this.httpClient, Method.GET, url, this.onSearchTrainResponse);
+			HttpTask httpTask = new HttpTask(this.httpClient, Method.GET, url, new OnSearchTrainResponse(callback));
 			httpTask.execute();
 		} catch (UnsupportedEncodingException e) {
 			Log.e(TAG, "HttpTask.searchTrain - exception: " + e.getMessage());
@@ -134,70 +133,77 @@ public class MyHttp {
 		}
 	}
 
-	// search result handler.
-	private final OnResponse onSearchTrainResponse = new OnResponse() {
+	class OnSearchTrainResponse implements OnResponse {
+		OnSearchTrainCallback callback = null;
+
+		public OnSearchTrainResponse(OnSearchTrainCallback callback) {
+			this.callback = callback;
+		}
+
 		@Override
 		public void onResponse(int status, String content) {
 			Log.d(TAG, "MyHttp.onSearchTrainResponse - status: " + status);
 			//Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);
 
-			ArrayList<Train> result = new ArrayList<Train>();
+			ArrayList<Train> result = null;
+			String error = null;
 
 			// error case
-			ArrayList<Pair<String, Integer>> error = getStringBetweenFingerprint(
+			ArrayList<Pair<String, Integer>> errorMsg = getStringBetweenFingerprint(
 					content,
 					FP_SEARCH_ERROR_BEGIN,
 					FP_SEARCH_ERROR_END);
-			if (error.size() > 0) {
-				Log.w(TAG, "MyHttp.onSearchTrainResponse - error: " + error.get(0));
-				if (MyHttp.this.onSearchTrainCallback != null) {
-					MyHttp.this.onSearchTrainCallback.onResult(null, error.get(0).first);
-				}
-				return;
-			}
 
-			// train information
-			ArrayList<Pair<String, Integer>> trainInfoList = getStringBetweenFingerprint(
-					content,
-					FP_SEARCH_TRAIN_INFO_BEGIN,
-					FP_SEARCH_TRAIN_INFO_END);
-			for (int i = 0; i < trainInfoList.size(); ++i) {
-				// This string is about train information.
-				String trainInfoStr = trainInfoList.get(i).first;
-				// The train information is start at `index`.
-				int index = trainInfoList.get(i).second;
-				// Find matched icon for special seat.
-				Pair<String, Integer> specialSeat = getFirstMatched(
-						content, FP_SEARCH_SEAT_SOLD_OUT, FP_SEARCH_SEAT_SPECIAL, index);
-				// Find matched icon for normal seat.
-				Pair<String ,Integer> normalSeat =  getFirstMatched(
-						content, FP_SEARCH_SEAT_SOLD_OUT, FP_SEARCH_SEAT_NORMAL, specialSeat.second + 1);
-				// Create new train object.
-				String[] trainInfo = trainInfoStr.replaceAll("\"", "").split(",");
-				Train train = new Train(
-						trainInfo[20].trim(),
-						trainInfo[22].trim(),
-						trainInfo[18].trim(),
-						trainInfo[24].trim(),
-						trainInfo[25].trim(),
-						trainInfo[19].trim(),
-						trainInfo[26].trim(),
-						trainInfo[27].trim(),
-						specialSeat.first == FP_SEARCH_SEAT_SPECIAL,
-						normalSeat.first == FP_SEARCH_SEAT_NORMAL
-						);
-				Log.v(TAG, train.toString());
-				result.add(train);
+			if (errorMsg.size() > 0) {
+				Log.w(TAG, "MyHttp.onSearchTrainResponse - error: " + errorMsg.get(0).first);
+				error = errorMsg.get(0).first;
+			} else {
+				result = new ArrayList<Train>();
+
+				// train information
+				ArrayList<Pair<String, Integer>> trainInfoList = getStringBetweenFingerprint(
+						content,
+						FP_SEARCH_TRAIN_INFO_BEGIN,
+						FP_SEARCH_TRAIN_INFO_END);
+
+				for (int i = 0; i < trainInfoList.size(); ++i) {
+					// This string is about train information.
+					String trainInfoStr = trainInfoList.get(i).first;
+					// The train information is start at `index`.
+					int index = trainInfoList.get(i).second;
+					// Find matched icon for special seat.
+					Pair<String, Integer> specialSeat = getFirstMatched(
+							content, FP_SEARCH_SEAT_SOLD_OUT, FP_SEARCH_SEAT_SPECIAL, index);
+					// Find matched icon for normal seat.
+					Pair<String ,Integer> normalSeat =  getFirstMatched(
+							content, FP_SEARCH_SEAT_SOLD_OUT, FP_SEARCH_SEAT_NORMAL, specialSeat.second + 1);
+					// Create new train object.
+					String[] trainInfo = trainInfoStr.replaceAll("\"", "").split(",");
+					Train train = new Train(
+							trainInfo[20].trim(),
+							trainInfo[22].trim(),
+							trainInfo[18].trim(),
+							trainInfo[24].trim(),
+							trainInfo[25].trim(),
+							trainInfo[19].trim(),
+							trainInfo[26].trim(),
+							trainInfo[27].trim(),
+							specialSeat.first == FP_SEARCH_SEAT_SPECIAL,
+							normalSeat.first == FP_SEARCH_SEAT_NORMAL
+							);
+					Log.v(TAG, train.toString());
+					result.add(train);
+				}
 			}
 			// Calls back handler.
-			if (MyHttp.this.onSearchTrainCallback != null) {
-				MyHttp.this.onSearchTrainCallback.onResult(result, null);
+			if (this.callback != null) {
+				this.callback.onResult(result, error);
 			}
 		}
-	};
+	}
 
 	// reserve train
-	public void resv(Train train) {
+	public void resv(Train train, OnResvTrainCallback callback) {
 		Log.d(TAG, "MyHttp.resv(" + train.toString() + ")");
 
 		ArrayList<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
@@ -224,7 +230,7 @@ public class MyHttp {
 			String param = getContentString(new UrlEncodedFormEntity(nameValuePairs), "UTF-8");
 			String url = URL_RESV + "?" + param;
 			//Log.d(TAG, url);
-			HttpTask httpTask = new HttpTask(this.httpClient, Method.GET, url, this.onResvResponse);
+			HttpTask httpTask = new HttpTask(this.httpClient, Method.GET, url, new OnReserveResponse(callback));
 			//httpTask.setPostEntity(nameValuePairs);
 			httpTask.execute();
 		} catch (UnsupportedEncodingException e) {
@@ -233,32 +239,44 @@ public class MyHttp {
 		}
 	}
 
-	// reserve result handler.
-	private final OnResponse onResvResponse = new OnResponse() {
+	class OnReserveResponse implements OnResponse {
+		OnResvTrainCallback callback = null;
+
+		public OnReserveResponse(OnResvTrainCallback callback) {
+			this.callback = callback;
+		}
+
 		@Override
 		public void onResponse(int status, String content) {
 			Log.d(TAG, "MyHttp.onResvResponse - status: " + status);
 			//Log.v(TAG, "MyHttp.onResvResponse - content: " + content);
+
+			boolean result = false;
+			String error = null;
 			if (content.contains(FP_RESV_TO_LOGIN)) {
 				Log.w(TAG, "MyHttp.onResvResponse - need login");
-				MyTrainResv.showToast("로그인 필요");
+				error = "로그인 필요";
 			} else if (content.contains(FP_RESV_CONFIRM_IMG)) {
 				Log.i(TAG, "MyHttp.onResvResponse - Success!!!!");
-				MyTrainResv.showToast("예약 완료");
+				result = true;
 			} else {
 				// error case
-				ArrayList<Pair<String, Integer>> error = getStringBetweenFingerprint(
+				ArrayList<Pair<String, Integer>> errorMsg = getStringBetweenFingerprint(
 						content,
 						FP_RESV_ERROR_BEGIN,
 						FP_RESV_ERROR_END);
-				if (error.size() > 0) {
-					Log.w(TAG, "MyHttp.onSearchTrainResponse - error: " + error.get(0));
-					MyTrainResv.showToast(error.get(0).first);
-					return;
+				if (errorMsg.size() > 0) {
+					Log.w(TAG, "MyHttp.onSearchTrainResponse - error: " + errorMsg.get(0).first);
+					error = errorMsg.get(0).first;
 				}
 			}
+
+			if (this.callback != null) {
+				this.callback.onResult(result, error);
+			}
 		}
-	};
+	}
+
 
 	// Get list of content string in `text` that reside between `begin` and `end` finger print.
 	private final ArrayList<Pair<String, Integer>> getStringBetweenFingerprint(

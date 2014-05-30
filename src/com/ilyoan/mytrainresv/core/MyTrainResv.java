@@ -71,15 +71,14 @@ public class MyTrainResv {
 				firstClass,
 				ktxOnly);
 
-		// Set handler.
-		this.http.setOnSearchTrainCallback(this.onSearchTrainCallback);
 		// Do search.
 		this.http.searchTrain(
 				station.getCode(stationFrom),
 				station.getCode(stationTo),
 				date,
 				timeFrom,
-				ktxOnly);
+				ktxOnly,
+				this.onSearchTrainCallback);
 	}
 
 	// Train list result handler.
@@ -120,6 +119,8 @@ public class MyTrainResv {
 
 		private boolean isRunning = false;
 
+		int tries = 0;
+
 		public TrainResvWorker(ArrayList<Train> wishTrainList, TrainSearchParam searchParam) {
 			// Set parameters to search and reserve train.
 			this.wishTrainNo = new HashSet<String>();
@@ -131,6 +132,7 @@ public class MyTrainResv {
 
 		public void startWorking() {
 			this.isRunning = true;
+			this.tries = 0;
 			doSearch();
 		}
 
@@ -142,21 +144,25 @@ public class MyTrainResv {
 			if (this.isRunning) {
 				Log.d(TAG, "Search train for reservation");
 
-				// Register train list handler.
-				MyTrainResv.this.http.setOnSearchTrainCallback(
-						this.onSearchTrainForResvCallback);
+				this.tries += 1;
+
+				if (this.tries % 20 == 0) {
+					showToast("에약시도중: " + this.tries);
+				}
+
 				// Search trains.
 				MyTrainResv.this.http.searchTrain(
 						this.searchParam.stationFrom,
 						this.searchParam.stationTo,
 						this.searchParam.date,
 						this.searchParam.timeFrom,
-						this.searchParam.ktxOnly);
+						this.searchParam.ktxOnly,
+						this.onSearchTrainCallback);
 			}
 		}
 
 		// Train list are obtained, see if there is a train available.
-		private final MyHttp.OnSearchTrainCallback onSearchTrainForResvCallback = new MyHttp.OnSearchTrainCallback() {
+		private final MyHttp.OnSearchTrainCallback onSearchTrainCallback = new MyHttp.OnSearchTrainCallback() {
 			@Override
 			public void onResult(ArrayList<Train> trainList, String error) {
 				boolean toBeContinued = true;
@@ -188,7 +194,23 @@ public class MyTrainResv {
 		private void doResv(Train train) {
 			Log.i(TAG, "Try reserve train");
 			Log.i(TAG, train.toString());
+
+			MyTrainResv.this.http.resv(train, this.onResvTrainCallback);
 		}
+
+		private final MyHttp.OnResvTrainCallback onResvTrainCallback = new MyHttp.OnResvTrainCallback() {
+			@Override
+			public void onResult(boolean result, String error) {
+				Log.i(TAG, "Reservation result: " + result);
+				if (result == true) {
+					showToast("예약완료");
+				} else {
+					Log.i(TAG, "Reservation error: " + error);
+					showToast(error);
+					doSearch();
+				}
+			}
+		};
 	}
 
 
