@@ -211,9 +211,14 @@ public class MyTrainResv {
 				if (result == true) {
 					showToast("예약완료");
 				} else {
-					Log.i(TAG, "Reservation error: " + error);
-					showToast(error);
-					doSearch();
+					if (error != null) {
+						Log.i(TAG, "Reservation error: " + error);
+						showToast(error);
+						doSearch();
+					} else {
+						Log.e(TAG, "Reservation error but error is null");
+						showToast("알수 없는 문제로 예약 실패");
+					}
 				}
 			}
 		};

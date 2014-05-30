@@ -29,9 +29,12 @@ public class MyHttp {
 	private static String URL_LOGIN = "https://www.letskorail.com/korail/com/loginAction.do";
 	private static String URL_SEARCH = "http://www.letskorail.com/ebizprd/EbizPrdTicketPr21111_i1.do";
 	private static String URL_RESV = "http://www.letskorail.com/ebizprd/EbizPrdTicketPr12111_i1.do";
+	private static String URL_LOGIN_REFERER = "http://www.letskorail.com/korail/com/login.do";
+	private static String URL_SEARCH_REFERER = "http://www.letskorail.com/ebizprd/EbizPrdTicketPr21111_i1.do";
 	private static String URL_RESV_REFERER = "http://www.letskorail.com/ebizprd/EbizPrdTicketPr21111_i1.do";
-	private static String REQUEST_HEADER_HOST = "www.letkorail.com";
-	private static String REQUEST_HEADER_ORIGIN = "http://www.letskorail.com";
+	private static String REQUEST_HEADER_HOST = "www.letskorail.com";
+	private static String REQUEST_HEADER_HTTPS_ORIGIN = "https://www.letskorail.com";
+	private static String REQUEST_HEADER_HTTP_ORIGIN = "http://www.letskorail.com";
 	private static String FP_LOGIN_SUCCESS_URL = "loginProc.do";
 	private static String FP_SEARCH_ERROR_BEGIN = "<span class=\"point02\">";
 	private static String FP_SEARCH_ERROR_END = "</span>";
@@ -64,6 +67,7 @@ public class MyHttp {
 		ArrayList<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
 		// selInputFlg - 2: membership number, 4: cellphone number, 5: email.
 		nameValuePairs.add(new BasicNameValuePair("selInputFlg", "2"));
+		nameValuePairs.add(new BasicNameValuePair("radIngrDvCd", "2"));
 		nameValuePairs.add(new BasicNameValuePair("UserId", id));
 		nameValuePairs.add(new BasicNameValuePair("UserPwd", pw));
 		nameValuePairs.add(new BasicNameValuePair("hidMemberFlg", "1"));
@@ -71,8 +75,17 @@ public class MyHttp {
 		try {
 			String param = getContentString(new UrlEncodedFormEntity(nameValuePairs), "UTF-8");
 			String url = URL_LOGIN + "?" + param;
+			//String url = URL_LOGIN;
 			//Log.d(TAG, url);
-			HttpTask httpTask = new HttpTask(this.httpClient, Method.GET, url, this.onLoginResponse);
+			//HttpTask httpTask = new HttpTask(this.httpClient, Method.GET, url, URL_LOGIN_REFERER, this.onLoginResponse);
+			HttpTask httpTask = new HttpTask(
+					this.httpClient,
+					Method.GET,
+					url,
+					URL_LOGIN_REFERER,
+					REQUEST_HEADER_HOST,
+					REQUEST_HEADER_HTTP_ORIGIN,
+					this.onLoginResponse);
 			//httpTask.setPostEntity(nameValuePairs);
 			httpTask.execute();
 		} catch (UnsupportedEncodingException e) {
@@ -127,7 +140,14 @@ public class MyHttp {
 			String url = URL_SEARCH + "?" + getContentString(param, "UTF-8");
 			//Log.d(TAG, "MyHttp.searchTrain - url: " + url);
 
-			HttpTask httpTask = new HttpTask(this.httpClient, Method.GET, url, new OnSearchTrainResponse(callback));
+			HttpTask httpTask = new HttpTask(
+					this.httpClient,
+					Method.GET,
+					url,
+					URL_SEARCH_REFERER,
+					"www.letkorail.com",
+					REQUEST_HEADER_HTTP_ORIGIN,
+					new OnSearchTrainResponse(callback));
 			httpTask.execute();
 		} catch (UnsupportedEncodingException e) {
 			Log.e(TAG, "HttpTask.searchTrain - exception: " + e.getMessage());
@@ -232,7 +252,14 @@ public class MyHttp {
 			String param = getContentString(new UrlEncodedFormEntity(nameValuePairs), "UTF-8");
 			String url = URL_RESV + "?" + param;
 			//Log.d(TAG, url);
-			HttpTask httpTask = new HttpTask(this.httpClient, Method.GET, url, new OnReserveResponse(callback));
+			HttpTask httpTask = new HttpTask(
+					this.httpClient,
+					Method.GET,
+					url,
+					URL_RESV_REFERER,
+					"www.letkorail.com",
+					REQUEST_HEADER_HTTP_ORIGIN,
+					new OnReserveResponse(callback));
 			//httpTask.setPostEntity(nameValuePairs);
 			httpTask.execute();
 		} catch (UnsupportedEncodingException e) {
@@ -370,6 +397,9 @@ public class MyHttp {
 	private class HttpTask extends AsyncTask<String, Void, HttpResponse> {
 		private final Method method;
 		private final String url;
+		private final String referer;
+		private final String host;
+		private final String origin;
 		private OnResponse onResponse = null;
 		private HttpEntity postEntity = null;
 		private int status;
@@ -379,10 +409,13 @@ public class MyHttp {
 		private HttpClient httpClient = null;
 
 		// Create new HttpTask object.
-		public HttpTask(HttpClient httpClient, Method method, String url, OnResponse onResponse) {
+		public HttpTask(HttpClient httpClient, Method method, String url, String referer, String host, String origin, OnResponse onResponse) {
 			this.httpClient = httpClient;
 			this.method = method;
 			this.url = url;
+			this.referer = referer;
+			this.host = host;
+			this.origin = origin;
 			this.onResponse = onResponse;
 		}
 
@@ -417,9 +450,9 @@ public class MyHttp {
 			// Set request header.
 			request.addHeader("Content-Type", "application/xhtml+xml");
 			request.addHeader("charset", "UTF-8");
-			request.addHeader("Host", REQUEST_HEADER_HOST);
-			request.addHeader("Origin", REQUEST_HEADER_ORIGIN);
-			request.addHeader("Referer", URL_RESV_REFERER);
+			request.addHeader("Host", this.host);
+			request.addHeader("Origin", this.origin);
+			request.addHeader("Referer", this.referer);
 
 			try {
 				// Take http response
