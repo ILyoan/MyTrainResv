@@ -145,6 +145,12 @@ public class MyTrainResv {
 				Log.d(TAG, "Search train for reservation");
 
 				this.tries += 1;
+				try {
+					// Too many request can be detected and block by system maintainer ^^;
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 
 				if (this.tries % 20 == 0) {
 					showToast("에약시도중: " + this.tries);
