@@ -30,6 +30,8 @@ public class MyHttp {
 	private static String URL_SEARCH = "http://www.letskorail.com/ebizprd/EbizPrdTicketPr21111_i1.do";
 	private static String URL_RESV = "http://www.letskorail.com/ebizprd/EbizPrdTicketPr12111_i1.do";
 	private static String URL_RESV_REFERER = "http://www.letskorail.com/ebizprd/EbizPrdTicketPr21111_i1.do";
+	private static String REQUEST_HEADER_HOST = "www.letkorail.com";
+	private static String REQUEST_HEADER_ORIGIN = "http://www.letskorail.com";
 	private static String FP_LOGIN_SUCCESS_URL = "loginProc.do";
 	private static String FP_SEARCH_ERROR_BEGIN = "<span class=\"point02\">";
 	private static String FP_SEARCH_ERROR_END = "</span>";
@@ -415,6 +417,8 @@ public class MyHttp {
 			// Set request header.
 			request.addHeader("Content-Type", "application/xhtml+xml");
 			request.addHeader("charset", "UTF-8");
+			request.addHeader("Host", REQUEST_HEADER_HOST);
+			request.addHeader("Origin", REQUEST_HEADER_ORIGIN);
 			request.addHeader("Referer", URL_RESV_REFERER);
 
 			try {
