@@ -2,8 +2,6 @@ package com.ilyoan.mytrainresv.core;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import android.app.Activity;
 import android.util.Log;
@@ -24,8 +22,10 @@ public class MyTrainResv {
 	// Notification handler.
 	private OnNotification noti = null;
 
-	// Last used searching option for train list.
-	private TrainSearchOption lastSearchOption = null;
+	// Last used searching Param for train list.
+	private TrainSearchParam lastSearchParam = null;
+
+	private TrainResvWorker resvWorker = null;
 
 	// Prevent creating an object of this class as this is singleton.
 	private MyTrainResv() { }
@@ -59,10 +59,10 @@ public class MyTrainResv {
 			boolean ktxOnly) {
 		Log.d(TAG, "MyTrainResv.searchTrain()");
 
-		// Update last used search option.
-		// This option will be used on resvTrain() function.
+		// Update last used search Param.
+		// This Param will be used on resvTrain() function.
 		Station station = Station.getInstance();
-		this.lastSearchOption = new TrainSearchOption(
+		this.lastSearchParam = new TrainSearchParam(
 				station.getCode(stationFrom),
 				station.getCode(stationTo),
 				date,
@@ -94,84 +94,64 @@ public class MyTrainResv {
 				MyTrainResv.this.noti.onTrainList(trainList);
 			}
 		}
-
 	};
 
 	// Reserve train
 	public void resvTrain(ArrayList<Train> trainList) {
 		// Trains should have been search at least once.
-		if (this.lastSearchOption == null) {
+		if (this.lastSearchParam == null) {
 			return;
 		}
 
 		Log.d(TAG, "MyTrainResv.resvTrain()");
 
-		// Stop the thread
-		this.trainResvThread.stopThread();
-		// Start with new parameter
-		this.trainResvThread.startThread(trainList, this.lastSearchOption);
-
-
+		if (this.resvWorker != null) {
+			this.resvWorker.stopWorking();
+		}
+		this.resvWorker = new TrainResvWorker(trainList, this.lastSearchParam);
+		this.resvWorker.startWorking();
 	}
 
-	// Train reservation thread.
-	TrainResvThread trainResvThread = new TrainResvThread();
-	class TrainResvThread extends Thread {
+	class TrainResvWorker {
 		// The list of train that is wanted to be reserved.
 		private HashSet<String> wishTrainNo = null;
-		// train search option
-		private TrainSearchOption searchOption = null;
-		//
-		private boolean running = false;
-		private final Lock searchLoopLock = new ReentrantLock(true);
+		// train search parameter
+		private TrainSearchParam searchParam = null;
 
+		private boolean isRunning = false;
 
-		public void startThread(
-				final ArrayList<Train> wishList,
-				final TrainSearchOption searchOption) {
+		public TrainResvWorker(ArrayList<Train> wishTrainList, TrainSearchParam searchParam) {
 			// Set parameters to search and reserve train.
 			this.wishTrainNo = new HashSet<String>();
-			for (Train train : wishList) {
+			for (Train train : wishTrainList) {
 				this.wishTrainNo.add(train.no);
 			}
-			this.searchOption = searchOption;
-
-			// Set this thread is running.
-			this.running = true;
-
-			// Start thread.
-			start();
+			this.searchParam = searchParam;
 		}
 
-		public void stopThread() {
-			// To halt thread loop.
-			this.running = false;
-			// If the thread is running than wait until it dies.
-			if (isAlive()) {
-				try {
-					join();
-				} catch (InterruptedException e) {
-					showToast(e.getMessage());
-				}
-			}
+		public void startWorking() {
+			this.isRunning = true;
+			doSearch();
 		}
 
-		@Override
-		public void run() {
-			while (this.running) {
-				this.searchLoopLock.lock();
-				Log.d(TAG, "Resv thread running");
+		public void stopWorking() {
+			this.isRunning = false;
+		}
+
+		private void doSearch() {
+			if (this.isRunning) {
+				Log.d(TAG, "Search train for reservation");
 
 				// Register train list handler.
 				MyTrainResv.this.http.setOnSearchTrainCallback(
 						this.onSearchTrainForResvCallback);
 				// Search trains.
 				MyTrainResv.this.http.searchTrain(
-						this.searchOption.stationFrom,
-						this.searchOption.stationTo,
-						this.searchOption.date,
-						this.searchOption.timeFrom,
-						this.searchOption.ktxOnly);
+						this.searchParam.stationFrom,
+						this.searchParam.stationTo,
+						this.searchParam.date,
+						this.searchParam.timeFrom,
+						this.searchParam.ktxOnly);
 			}
 		}
 
@@ -179,34 +159,37 @@ public class MyTrainResv {
 		private final MyHttp.OnSearchTrainCallback onSearchTrainForResvCallback = new MyHttp.OnSearchTrainCallback() {
 			@Override
 			public void onResult(ArrayList<Train> trainList, String error) {
+				boolean toBeContinued = true;
 				if (error != null) {
 					// If there was an error show toast message.
 					showToast(error);
+					toBeContinued = false;
 				} else {
 					// Iterate over the train list.
 					for (Train train: trainList) {
 						// We got a train available.
-						if (train.hasNormal || train.hasSpecial && MyTrainResv.this.lastSearchOption.firstClass) {
+						if (train.hasNormal || train.hasSpecial && MyTrainResv.this.lastSearchParam.firstClass) {
 							// And the train is one of wanted.
-							if (TrainResvThread.this.wishTrainNo.contains(train.no)) {
+							if (TrainResvWorker.this.wishTrainNo.contains(train.no)) {
 								// Try reservation
-								TryResvTrain(train);
+								doResv(train);
+								toBeContinued = false;
 							}
 						}
 					}
 				}
-				Log.d(TAG, "Resv thread notify");
-				TrainResvThread.this.searchLoopLock.unlock();
+				if (toBeContinued) {
+					Log.d(TAG, "Search train to be continued!");
+					doSearch();
+				}
 			}
 		};
 
-		public void TryResvTrain(Train train) {
-			Log.d(TAG, "MyTrainResv.TryResvTrain()");
-			Log.i(TAG, "Try resv train - " + train.toString());
-
-			//MyTrainResv.this.http.resv(train);
+		private void doResv(Train train) {
+			Log.i(TAG, "Try reserve train");
+			Log.i(TAG, train.toString());
 		}
-	};
+	}
 
 
 	// Show toast message.
@@ -228,9 +211,9 @@ public class MyTrainResv {
 		this.noti = noti;
 	}
 
-	// Train searching option.
-	public class TrainSearchOption {
-		public TrainSearchOption(
+	// Train searching Parameter.
+	public class TrainSearchParam {
+		public TrainSearchParam(
 				String stationFrom,
 				String stationTo,
 				String date,
