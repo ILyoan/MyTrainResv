@@ -7,6 +7,8 @@ import android.app.Activity;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.ilyoan.mytrainresv.MainActivity;
+
 public class MyTrainResv {
 	private static final String TAG = "MyTrainResv";
 
@@ -147,7 +149,7 @@ public class MyTrainResv {
 				this.tries += 1;
 				try {
 					// Too many request can be detected and block by system maintainer ^^;
-					Thread.sleep(1000);
+					Thread.sleep(2000);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -155,6 +157,7 @@ public class MyTrainResv {
 				if (this.tries % 20 == 0) {
 					showToast("에약시도중: " + this.tries);
 				}
+				displayNoti("예약중", "시도횟수: " + this.tries);
 
 				// Search trains.
 				MyTrainResv.this.http.searchTrain(
@@ -209,15 +212,18 @@ public class MyTrainResv {
 			public void onResult(boolean result, String error) {
 				Log.i(TAG, "Reservation result: " + result);
 				if (result == true) {
-					showToast("예약완료");
+					showToast("예약 완료");
+					displayVibrateNoti("예약 완료", "예약 완료");
 				} else {
 					if (error != null) {
 						Log.i(TAG, "Reservation error: " + error);
 						showToast(error);
+						displayVibrateNoti("예약 실패", error);
 						doSearch();
 					} else {
 						Log.e(TAG, "Reservation error but error is null");
 						showToast("알수 없는 문제로 예약 실패");
+						displayVibrateNoti("예약 실패", "알수 없는 문제로 예약 실패");
 					}
 				}
 			}
@@ -232,6 +238,18 @@ public class MyTrainResv {
 				message,
 				Toast.LENGTH_LONG);
 		toast.show();
+	}
+
+	// display notification
+	public static void displayNoti(String title, String text) {
+		MainActivity activity = (MainActivity)MyTrainResv.activity;
+		activity.displayNoti(title, text);
+	}
+
+	// display notification
+	public static void displayVibrateNoti(String title, String text) {
+		MainActivity activity = (MainActivity)MyTrainResv.activity;
+		activity.displayNoti(title, text, true);
 	}
 
 	// Interface for notifying to the main activity or wrapper system.

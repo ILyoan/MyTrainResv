@@ -103,9 +103,11 @@ public class MyHttp {
 			if (content.contains(FP_LOGIN_SUCCESS_URL)) {
 				Log.i(TAG, "MyHttp.onLoginResponse - login succeeded");
 				MyTrainResv.showToast("로그인 성공");
+				MyTrainResv.displayNoti("로그인", "로그인 성공");
 			} else {
 				Log.i(TAG, "MyHttp.onLoginResponse - login failed");
 				MyTrainResv.showToast("로그인 실패");
+				MyTrainResv.displayNoti("로그인", "로그인 실패");
 			}
 		}
 	};

@@ -49,7 +49,7 @@ public class TrainFragment extends Fragment {
 	}
 
 	public String getDate() {
-		return ((String)this.date.getSelectedItem()).replaceAll("-", "");
+		return ((String)this.date.getSelectedItem()).replaceAll("-", "").substring(0, 8);
 	}
 
 	public String getTimeFrom() {
@@ -104,7 +104,7 @@ public class TrainFragment extends Fragment {
 
 	private void initDateSpinner(Spinner spinner) {
 		Date date = new Date();
-		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd(E)");
 		ArrayList<String> dates = new ArrayList<String>();
 		for (int i = 0; i < 30; ++i) {
 			dates.add(dateFormat.format(date));

@@ -4,9 +4,16 @@ import java.util.ArrayList;
 
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 import android.view.MenuItem;
+
 import com.ilyoan.mytrainresv.core.MyTrainResv;
 import com.ilyoan.mytrainresv.core.Train;
 
@@ -79,6 +86,39 @@ public class MainActivity extends FragmentActivity implements ViewListFragment.C
 			return true;
 		}
 		return super.onOptionsItemSelected(item);
+	}
+
+	public void displayNoti(String title, String text) {
+		displayNoti(title, text, false);
+	}
+
+	public void displayNoti(String title, String text, boolean vibrate) {
+		// Notification bar
+		int notificationId = 001;
+
+		Intent viewIntent = new Intent(this, MainActivity.class);
+		PendingIntent viewPendingIntent =
+				PendingIntent.getActivity(this, 0, viewIntent, 0);
+
+		NotificationCompat.Builder notificationBuilder =
+				new NotificationCompat.Builder(this)
+		.setSmallIcon(R.drawable.ic_launcher)
+		.setContentTitle(title)
+		.setContentText(text)
+		.setContentIntent(viewPendingIntent);
+
+		if (vibrate) {
+			notificationBuilder.setVibrate(new long[] { 1000, 1000, 1000, 1000, 1000, 1000, 3000 });
+		}
+
+		// Get an instance of the NotificationManager service
+		NotificationManager nm =
+				(NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+
+		Log.d("MyTrainResv", "display notification: " + text);
+
+		// Build the notification and issues it with notification manager.
+		nm.notify(notificationId, notificationBuilder.build());
 	}
 
 	MyTrainResv.OnNotification myTrainNoti = new MyTrainResv.OnNotification() {
