@@ -5,11 +5,26 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -17,8 +32,18 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.conn.scheme.PlainSocketFactory;
+import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.conn.scheme.SchemeRegistry;
+import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpParams;
+import org.apache.http.params.HttpProtocolParams;
+import org.apache.http.protocol.HTTP;
 
 import android.os.AsyncTask;
 import android.util.Log;
@@ -26,9 +51,14 @@ import android.util.Pair;
 
 public class MyHttp {
 	private static final String TAG = "MyTrainResv";
-	private static String URL_LOGIN = "https://www.letskorail.com/korail/com/loginAction.do";
-	private static String URL_SEARCH = "http://www.letskorail.com/ebizprd/EbizPrdTicketPr21111_i1.do";
-	private static String URL_RESV = "http://www.letskorail.com/ebizprd/EbizPrdTicketPr12111_i1.do";
+
+	private static String URL_HOST = "smart.letskorail.com:9443";
+	private static String URL_PREFIX = "https://" + URL_HOST + "/classes/com.korail.mobile";
+
+	private static String URL_LOGIN = URL_PREFIX + ".login.Login";
+	private static String URL_SEARCH = URL_PREFIX + ".seatMovie.ScheduleView";
+	private static String URL_RESV = URL_PREFIX + ".certification.TicketReservation";
+
 	private static String URL_LOGIN_REFERER = "http://www.letskorail.com/korail/com/login.do";
 	private static String URL_SEARCH_REFERER = "http://www.letskorail.com/ebizprd/EbizPrdTicketPr21111_i1.do";
 	private static String URL_RESV_REFERER = "http://www.letskorail.com/ebizprd/EbizPrdTicketPr21111_i1.do";
@@ -48,7 +78,78 @@ public class MyHttp {
 	private static String FP_RESV_ERROR_BEGIN = "<span class=\"point02\">";
 	private static String FP_RESV_ERROR_END = "</span>";
 
-	private final HttpClient httpClient = new DefaultHttpClient();
+	private HttpClient httpClient = null;
+
+	public class MySSLSocketFactory extends SSLSocketFactory {
+		SSLContext sslContext;
+
+
+		public MySSLSocketFactory(KeyStore truststore) throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException, UnrecoverableKeyException, NoSuchProviderException {
+			super(truststore);
+
+			this.sslContext = SSLContext.getInstance("SSLv3");
+
+			TrustManager tm = new X509TrustManager() {
+				@Override
+				public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+				}
+
+				@Override
+				public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+				}
+
+				@Override
+				public X509Certificate[] getAcceptedIssuers() {
+					return null;
+				}
+			};
+
+			this.sslContext.init(null, new TrustManager[] { tm }, null);
+		}
+
+		@Override
+		public Socket createSocket(Socket socket, String host, int port, boolean autoClose) throws IOException, UnknownHostException {
+			return this.sslContext.getSocketFactory().createSocket(socket, host, port, autoClose);
+		}
+
+		@Override
+		public Socket createSocket() throws IOException {
+			return this.sslContext.getSocketFactory().createSocket();
+		}
+	}
+
+	public MyHttp() {
+		//this.httpClient = new DefaultHttpClient();
+		try {
+			KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+			trustStore.load(null, null);
+
+			SSLSocketFactory sf = new MySSLSocketFactory(trustStore);
+			sf.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+
+			HttpParams params = new BasicHttpParams();
+			HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
+			HttpProtocolParams.setContentCharset(params, HTTP.UTF_8);
+
+			SchemeRegistry registry = new SchemeRegistry();
+			registry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
+			registry.register(new Scheme("https", sf, 9443));
+
+			ClientConnectionManager ccm = new ThreadSafeClientConnManager(params, registry);
+
+			this.httpClient = new DefaultHttpClient(ccm, params);
+
+			// Scheme sch = new Scheme("https", sf, 9443);
+
+			// this.httpClient.getConnectionManager().getSchemeRegistry().register(sch);
+
+			Log.d(TAG, "Http Client created");
+
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage());
+		}
+	}
+
 
 	// Interface for search train result callback handler.
 	public interface OnSearchTrainCallback {
@@ -64,29 +165,32 @@ public class MyHttp {
 	public void login(String id, String pw) {
 		Log.d(TAG, "MyHttp.login(" + id + ")");
 
+		String DEVICE = "AD";
+		String VERSION = "150718001";
+
 		ArrayList<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
 		// selInputFlg - 2: membership number, 4: cellphone number, 5: email.
-		nameValuePairs.add(new BasicNameValuePair("selInputFlg", "2"));
-		nameValuePairs.add(new BasicNameValuePair("radIngrDvCd", "2"));
-		nameValuePairs.add(new BasicNameValuePair("UserId", id));
-		nameValuePairs.add(new BasicNameValuePair("UserPwd", pw));
-		nameValuePairs.add(new BasicNameValuePair("hidMemberFlg", "1"));
-		nameValuePairs.add(new BasicNameValuePair("txtDv", pw.length() == 4 ? "1" : "2"));
+		nameValuePairs.add(new BasicNameValuePair("Device", DEVICE));
+		nameValuePairs.add(new BasicNameValuePair("Version", VERSION));
+		nameValuePairs.add(new BasicNameValuePair("txtInputFlg", "2"));
+		nameValuePairs.add(new BasicNameValuePair("txtMemberNo", id));
+		nameValuePairs.add(new BasicNameValuePair("txtPwd", pw));
+
 		try {
 			String param = getContentString(new UrlEncodedFormEntity(nameValuePairs), "UTF-8");
-			String url = URL_LOGIN + "?" + param;
+			//String url = URL_LOGIN + "?" + param;
 			//String url = URL_LOGIN;
-			//Log.d(TAG, url);
+			Log.d(TAG, URL_LOGIN);
 			//HttpTask httpTask = new HttpTask(this.httpClient, Method.GET, url, URL_LOGIN_REFERER, this.onLoginResponse);
 			HttpTask httpTask = new HttpTask(
 					this.httpClient,
-					Method.GET,
-					url,
+					Method.POST,
+					URL_LOGIN,
 					URL_LOGIN_REFERER,
-					REQUEST_HEADER_HOST,
+					URL_HOST,
 					REQUEST_HEADER_HTTP_ORIGIN,
 					this.onLoginResponse);
-			//httpTask.setPostEntity(nameValuePairs);
+			httpTask.setPostEntity(nameValuePairs);
 			httpTask.execute();
 		} catch (UnsupportedEncodingException e) {
 			Log.e(TAG, "HttpTask.login - exception: " + e.getMessage());
@@ -99,7 +203,7 @@ public class MyHttp {
 		@Override
 		public void onResponse(int status, String content) {
 			Log.d(TAG, "MyHttp.onLoginResponse - status: " + status);
-			//Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);
+			Log.v(TAG, "MyHttp.onLoginResponse - content: " + content);
 			if (content.contains(FP_LOGIN_SUCCESS_URL)) {
 				Log.i(TAG, "MyHttp.onLoginResponse - login succeeded");
 				MyTrainResv.showToast("로그인 성공");
@@ -203,6 +307,7 @@ public class MyHttp {
 							content, FP_SEARCH_SEAT_SOLD_OUT, FP_SEARCH_SEAT_NORMAL, specialSeat.second + 1);
 					// Create new train object.
 					String[] trainInfo = trainInfoStr.replaceAll("\"", "").split(",");
+					Log.w(TAG, "MyHttp.OnSearchTrainResponse - train info: " + trainInfoStr);
 					Train train = new Train(
 							trainInfo[20].trim(),
 							trainInfo[22].trim(),
@@ -453,8 +558,8 @@ public class MyHttp {
 			request.addHeader("Content-Type", "application/xhtml+xml");
 			request.addHeader("charset", "UTF-8");
 			request.addHeader("Host", this.host);
-			request.addHeader("Origin", this.origin);
-			request.addHeader("Referer", this.referer);
+			//request.addHeader("Origin", this.origin);
+			//request.addHeader("Referer", this.referer);
 
 			try {
 				// Take http response
